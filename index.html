@@ -185,9 +185,6 @@
             });
         }
 
-        // --- 以下保留你原本的 tagCategoriesData, shuffleArray, executeSearch 等所有程式碼 ---
-        const tagCategoriesData = [
-        // ... (下略)
         const tagCategoriesData = [
             { label: "大類", items: ["濕熱類", "乾熱類", "中性類", "濕寒類", "乾寒類"] },
             { label: "性味", items: ["甘", "苦", "鹹", "酸", "辛", "熱/溫", "寒/涼", "平"] },
@@ -290,9 +287,8 @@
             categoryState = {};
             const secondaryCategories = ["濕熱", "乾熱", "中性", "濕寒", "乾寒"];
             
-            // 檢查 medData 是否成功載入
             if (typeof medData === 'undefined') {
-                document.getElementById('content-area').innerHTML = '<h3 style="text-align:center;color:red;">載入資料庫 (medData.js) 失敗，請確認檔案與 HTML 位於同一資料夾。</h3>';
+                document.getElementById('content-area').innerHTML = '<h3 style="text-align:center;color:red;">載入資料庫 (medData.js) 失敗，請確認檔案與 HTML 位於同一資料夾，且內部無語法錯誤。</h3>';
                 return;
             }
 
@@ -397,7 +393,6 @@
             renderTagPanels();
             switchCategory('植物藥');
         };
-		
     </script>
 </body>
 </html>
