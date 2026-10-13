@@ -2,7 +2,8 @@
   "name": "本草綱目抽卡系統",
   "short_name": "本草抽卡",
   "description": "中藥藥性分類與抽卡檢索系統",
-  "start_url": "./index.html",
+  "start_url": "/OctoMedGatcha-cloud/index.html",
+  "scope": "/OctoMedGatcha-cloud/",
   "display": "standalone",
   "background_color": "#F8F9FA",
   "theme_color": "#D9A05B",
@@ -19,3 +20,4 @@
     }
   ]
 }
+

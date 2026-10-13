@@ -1,11 +1,11 @@
 const CACHE_NAME = 'bencao-cache-v1';
 const urlsToCache = [
-  './',
-  './index.html',
-  './medData.js',
-  './manifest.json',
-  './icon-192.png',
-  './icon-512.png'
+  '/OctoMedGatcha-cloud/',
+  '/OctoMedGatcha-cloud/index.html',
+  '/OctoMedGatcha-cloud/medData.js',
+  '/OctoMedGatcha-cloud/manifest.json',
+  '/OctoMedGatcha-cloud/icon-192.png',
+  '/OctoMedGatcha-cloud/icon-512.png'
 ];
 
 // 安裝 Service Worker 並快取檔案
