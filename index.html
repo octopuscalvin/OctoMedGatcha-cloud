@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>本草綱目 - 藥性抽卡檢索系統 (Beta)</title>
+	<link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#D9A05B">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <style>
+        :root {
+            --bg-color: #F8F9FA;
+            --text-main: #333333;
+            --text-muted: #666666;
+            --accent-color: #D9A05B;
+            --border-color: #E0E0E0;
+            
+            --hl-hot: #C0392B;  
+            --hl-cold: #2980B9; 
+            --hl-neutral: #27AE60; 
+            
+            --card-hot: #FFEDED;    
+            --card-warm: #FFF5E6;   
+            --card-neutral: #EBF8EE; 
+            --card-cool: #E6F4F1;   
+            --card-cold: #E1EEF8;   
+        }
+
+        body {
+            font-family: "PingFang TC", "Heiti TC", "微軟正黑體", sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        h1 { text-align: center; color: var(--text-main); margin-bottom: 5px; }
+        .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 20px; font-size: 0.9em; }
+
+        .filter-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 15px; }
+        .filter-btn {
+            background-color: #fff; border: 2px solid var(--accent-color);
+            color: var(--text-main); padding: 8px 25px; font-size: 16px;
+            border-radius: 30px; cursor: pointer; transition: all 0.3s ease;
+        }
+        .filter-btn.active, .filter-btn:hover { background-color: var(--accent-color); color: #fff; }
+
+        .search-container { display: flex; justify-content: center; margin-bottom: 15px; gap: 10px; }
+        .search-container input {
+            padding: 10px 15px; width: 100%; max-width: 300px;
+            border: 1px solid var(--border-color); border-radius: 20px;
+            background-color: #fff; color: var(--text-main); font-size: 15px; outline: none;
+        }
+        .search-container input:focus { border-color: var(--accent-color); }
+        .search-container button {
+            padding: 10px 20px; background-color: var(--text-main); color: #fff;
+            border: none; border-radius: 20px; cursor: pointer; font-size: 15px;
+        }
+
+        /* 快速檢索標籤面板 */
+        .quick-tags-container {
+            max-width: 800px; margin: 0 auto 30px auto; display: flex; flex-direction: column; gap: 12px;
+            background: #fff; padding: 15px 20px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+        .tag-group { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        .tag-label { font-weight: bold; color: var(--text-muted); font-size: 0.85em; width: 55px; flex-shrink: 0; }
+        
+        .quick-tag {
+            background: #FAFAFA; border: 1px solid var(--border-color); color: var(--text-main); padding: 4px 12px;
+            border-radius: 15px; font-size: 0.85em; cursor: pointer; transition: all 0.2s ease; user-select: none;
+        }
+        .quick-tag:hover { border-color: var(--accent-color); transform: scale(1.05); }
+        
+        .quick-tag.active { background: var(--accent-color); color: #fff; border-color: var(--accent-color); box-shadow: 0 2px 5px rgba(217, 160, 91, 0.4); font-weight: bold; }
+        
+        .qt-N:hover { border-color: #9E9E9E; color: #9E9E9E; } .qt-N.active { background: #9E9E9E; color: #fff; border-color: #9E9E9E; }
+        .qt-R:hover { border-color: #3498DB; color: #3498DB; } .qt-R.active { background: #3498DB; color: #fff; border-color: #3498DB; }
+        .qt-SR:hover { border-color: #9B59B6; color: #9B59B6; } .qt-SR.active { background: #9B59B6; color: #fff; border-color: #9B59B6; }
+        .qt-SSR:hover { border-color: #FF8C00; color: #FF8C00; } .qt-SSR.active { background: #FF8C00; color: #fff; border-color: #FF8C00; }
+        .qt-UR:hover { border-color: #C0392B; color: #C0392B; } .qt-UR.active { background: #C0392B; color: #fff; border-color: #C0392B; }
+
+        .category-section { max-width: 1000px; margin: 0 auto 40px auto; }
+        .category-title { border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-bottom: 20px; color: var(--accent-color); display: flex; justify-content: space-between;}
+        
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; }
+        
+        .med-card { border: 1px solid rgba(0,0,0,0.05); border-radius: 12px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: transform 0.2s, box-shadow 0.2s; position: relative; min-height: 120px; }
+        .med-card:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.08); }
+
+        .bg-hot { background-color: var(--card-hot); border-color: #FAD4D4; }
+        .bg-warm { background-color: var(--card-warm); border-color: #FCE1C3; }
+        .bg-neutral { background-color: var(--card-neutral); border-color: #C3E6CB; }
+        .bg-cool { background-color: var(--card-cool); border-color: #C5E6DF; }
+        .bg-cold { background-color: var(--card-cold); border-color: #C4DEED; }
+        
+        .emoji-indicator { position: absolute; top: 12px; right: 15px; font-size: 1.4em; opacity: 0.8; pointer-events: none; }
+
+        .rarity-badge { position: absolute; bottom: 8px; right: 15px; font-size: 1.8em; font-weight: 900; font-style: italic; pointer-events: none; user-select: none; font-family: 'Arial Black', Impact, sans-serif; text-shadow: 2px 2px 3px rgba(0,0,0,0.15); }
+        .rarity-N { color: #9E9E9E; }
+        .rarity-R { color: #3498DB; text-shadow: 0 0 5px rgba(52, 152, 219, 0.4); }
+        .rarity-SR { color: #9B59B6; text-shadow: 0 0 8px rgba(155, 89, 182, 0.6); }
+        .rarity-SSR { background: linear-gradient(45deg, #FFD700, #FFA500, #FF8C00); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.7)); }
+        .rarity-UR { background: linear-gradient(270deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #8b00ff, #ff0000); background-size: 400% 400%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8)); animation: ur-glow 3s ease infinite; }
+        @keyframes ur-glow { 0% { background-position: 0% 50%; filter: drop-shadow(0 0 5px rgba(255,0,0,0.5)); } 50% { background-position: 100% 50%; filter: drop-shadow(0 0 15px rgba(0,255,0,0.8)); } 100% { background-position: 0% 50%; filter: drop-shadow(0 0 5px rgba(0,0,255,0.5)); } }
+
+        .med-name a { font-size: 1.25em; font-weight: bold; color: var(--accent-color); text-decoration: none; border-bottom: 1px dashed var(--accent-color); }
+        .med-content { margin-top: 10px; font-size: 0.9em; color: var(--text-main); }
+        .med-nature, .med-meridians { margin-bottom: 5px; }
+
+        .tag-link { cursor: pointer; border-bottom: 1px dotted; padding-bottom: 1px; }
+        .temp-hot { color: var(--hl-hot); font-weight: bold; }
+        .temp-cold { color: var(--hl-cold); font-weight: bold; }
+        .temp-neutral { color: var(--hl-neutral); font-weight: bold; }
+
+        .load-more-container { text-align: center; margin-top: 20px; }
+        .load-more-btn { background-color: white; border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px 30px; border-radius: 20px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+        .load-more-btn:hover { background-color: var(--border-color); color: var(--text-main); }
+
+        /* 側邊欄 */
+        .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 998; opacity: 0; visibility: hidden; transition: all 0.3s; }
+        .sidebar-overlay.active { opacity: 1; visibility: visible; }
+        .sidebar { position: fixed; top: 0; right: -450px; width: 400px; max-width: 90vw; height: 100vh; background: #fff; box-shadow: -4px 0 15px rgba(0,0,0,0.2); z-index: 999; transition: right 0.3s; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+        .sidebar.active { right: 0; }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; }
+        .sidebar-title { font-size: 1.1em; font-weight: bold; color: var(--accent-color); }
+        .sidebar-controls { display: flex; align-items: center; gap: 10px; }
+        .clear-btn { font-size: 0.8em; color: #E74C3C; border: 1px solid #E74C3C; background: none; border-radius: 12px; padding: 3px 10px; cursor: pointer; }
+        .clear-btn:hover { background: #E74C3C; color: #fff; }
+        .close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-muted); }
+        .sidebar .grid-container { grid-template-columns: 1fr; } 
+        
+        .sidebar .quick-tags-container { margin-bottom: 20px; padding: 10px; border: none; background: #F4F6F7; border-radius: 8px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); }
+        .sidebar .tag-group { gap: 4px; margin-bottom: 4px; }
+        .sidebar .tag-label { display: none; } 
+        .sidebar .quick-tag { padding: 3px 8px; font-size: 0.75em; }
+
+        @media (max-width: 600px) { .grid-container { grid-template-columns: 1fr; } .tag-label { width: 100%; margin-bottom: 2px; } }
+    </style>
+</head>
+<body>
+
+    <h1>本草綱目 藥性抽卡系統</h1>
+    <div class="subtitle">💧濕 / 🍂乾 / 🌿中 | 稀有度：N (常見) < R < SR < SSR < UR (傳說)</div>
+
+    <div class="filter-container">
+        <button class="filter-btn active" onclick="switchCategory('植物藥')">植物藥</button>
+        <button class="filter-btn" onclick="switchCategory('動物藥')">動物藥</button>
+    </div>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="手動搜尋藥名 (如: 當歸)..." onkeypress="if(event.key==='Enter') executeSearch()">
+        <button onclick="executeSearch()">搜尋</button>
+    </div>
+
+    <div id="main-tags-panel"></div>
+    <div id="content-area"></div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title" id="sidebarTitle">多條件篩選結果</div>
+            <div class="sidebar-controls">
+                <button class="clear-btn" onclick="clearAllFilters()">清除條件</button>
+                <button class="close-btn" onclick="closeSidebar()">&times;</button>
+            </div>
+        </div>
+        <div id="sidebar-tags-panel"></div>
+        <div id="sidebar-content"></div>
+    </div>
+
+    <!-- 引入外部資料庫檔案 -->
+    <script src="medData.js"></script>
+
+    <!-- 網頁邏輯 -->
+    <script>
+        // 註冊 Service Worker (PWA 核心)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker 註冊成功！範圍：', reg.scope))
+                    .catch(err => console.log('Service Worker 註冊失敗：', err));
+            });
+        }
+
+        // --- 以下保留你原本的 tagCategoriesData, shuffleArray, executeSearch 等所有程式碼 ---
+        const tagCategoriesData = [
+        // ... (下略)
+        const tagCategoriesData = [
+            { label: "大類", items: ["濕熱類", "乾熱類", "中性類", "濕寒類", "乾寒類"] },
+            { label: "性味", items: ["甘", "苦", "鹹", "酸", "辛", "熱/溫", "寒/涼", "平"] },
+            { label: "歸經", items: ["心", "肝", "脾", "肺", "腎", "胃", "大腸", "膀胱"] },
+            { label: "稀有", items: ["N", "R", "SR", "SSR", "UR"], isRarity: true }
+        ];
+
+        let currentPrimary = '植物藥';
+        let activeTags = []; 
+        const PAGE_SIZE = 8;
+        let categoryState = {};
+
+        function renderTagPanels() {
+            let html = '<div class="quick-tags-container">';
+            tagCategoriesData.forEach(cat => {
+                html += `<div class="tag-group"><span class="tag-label">${cat.label}：</span>`;
+                cat.items.forEach(item => {
+                    const isActive = activeTags.includes(item) ? 'active' : '';
+                    const rClass = cat.isRarity ? `qt-${item}` : '';
+                    html += `<button class="quick-tag ${rClass} ${isActive}" onclick="toggleTag('${item}')">${item}</button>`;
+                });
+                html += `</div>`;
+            });
+            html += '</div>';
+            document.getElementById('main-tags-panel').innerHTML = html;
+            document.getElementById('sidebar-tags-panel').innerHTML = html;
+        }
+
+        function toggleTag(tag) {
+            if (activeTags.includes(tag)) {
+                activeTags = activeTags.filter(t => t !== tag);
+            } else {
+                activeTags.push(tag);
+            }
+            renderTagPanels(); 
+            executeSearch();   
+        }
+
+        function clearAllFilters() {
+            activeTags = [];
+            document.getElementById('searchInput').value = "";
+            renderTagPanels();
+            executeSearch();
+        }
+
+        function shuffleArray(array) {
+            let arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function getCardBgClass(nature) {
+            if (nature.includes("大熱") || nature.includes("熱")) return "bg-hot";
+            if (nature.includes("大寒") || nature.includes("寒")) return "bg-cold";
+            if (nature.includes("微寒") || nature.includes("涼")) return "bg-cool";
+            if (nature.includes("溫") || nature.includes("微溫")) return "bg-warm";
+            return "bg-neutral";
+        }
+
+        function generateCardHTML(med) {
+            const searchUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent('中藥 ' + med.name)}`;
+            const bgClass = getCardBgClass(med.nature);
+            const emoji = med.secondary.includes("濕") ? "💧" : (med.secondary.includes("乾") ? "🍂" : "🌿");
+            
+            const ht = med.nature.replace(/(大熱|微溫|大寒|微寒|熱|溫|涼|寒|平)/g, (match) => {
+                let tc = ["大熱", "熱", "微溫", "溫"].includes(match) ? "temp-hot" :
+                         ["大寒", "微寒", "寒", "涼"].includes(match) ? "temp-cold" : "temp-neutral";
+                return `<span class="${tc}">${match}</span>`;
+            });
+            
+            return `
+                <div class="med-card ${bgClass}">
+                    <div class="emoji-indicator" title="${med.secondary}">${emoji}</div>
+                    <div class="med-name">
+                        <a href="${searchUrl}" target="_blank" title="查看圖片">${med.name}</a>
+                    </div>
+                    <div class="med-content">
+                        <div class="med-nature">性味：${ht}</div>
+                        <div class="med-meridians">歸經：${med.meridians}</div>
+                    </div>
+                    <div class="rarity-badge rarity-${med.rarity}">${med.rarity}</div>
+                </div>
+            `;
+        }
+
+        function switchCategory(primaryFilter) {
+            currentPrimary = primaryFilter;
+            activeTags = []; 
+            document.getElementById('searchInput').value = "";
+            renderTagPanels();
+
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if(btn.innerText === primaryFilter) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+
+            categoryState = {};
+            const secondaryCategories = ["濕熱", "乾熱", "中性", "濕寒", "乾寒"];
+            
+            // 檢查 medData 是否成功載入
+            if (typeof medData === 'undefined') {
+                document.getElementById('content-area').innerHTML = '<h3 style="text-align:center;color:red;">載入資料庫 (medData.js) 失敗，請確認檔案與 HTML 位於同一資料夾。</h3>';
+                return;
+            }
+
+            secondaryCategories.forEach(sec => {
+                let rawData = medData.filter(med => med.primary === primaryFilter && med.secondary === sec);
+                categoryState[sec] = { data: shuffleArray(rawData), displayCount: PAGE_SIZE };
+            });
+
+            renderAllSections();
+            closeSidebar();
+        }
+
+        function renderAllSections() {
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = '';
+            const secondaryCategories = ["濕熱", "乾熱", "中性", "濕寒", "乾寒"];
+            secondaryCategories.forEach(sec => {
+                const state = categoryState[sec];
+                if (state && state.data.length > 0) {
+                    const section = document.createElement('div');
+                    section.className = 'category-section';
+                    section.id = `section-${sec}`;
+                    
+                    section.innerHTML = `<div class="category-title"><h2>${sec}類</h2><span class="category-count">共 ${state.data.length} 種</span></div>`;
+                    const grid = document.createElement('div');
+                    grid.className = 'grid-container';
+                    state.data.slice(0, state.displayCount).forEach(med => { grid.innerHTML += generateCardHTML(med); });
+                    section.appendChild(grid);
+
+                    if (state.displayCount < state.data.length) {
+                        const btnC = document.createElement('div');
+                        btnC.className = 'load-more-container';
+                        btnC.innerHTML = `<button class="load-more-btn" onclick="categoryState['${sec}'].displayCount += PAGE_SIZE; renderAllSections();">更多... (還剩 ${state.data.length - state.displayCount} 種)</button>`;
+                        section.appendChild(btnC);
+                    }
+                    contentArea.appendChild(section);
+                }
+            });
+        }
+
+        function executeSearch() {
+            const keyword = document.getElementById('searchInput').value.trim();
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const sidebarContent = document.getElementById('sidebar-content');
+
+            if (keyword === "" && activeTags.length === 0) {
+                closeSidebar();
+                return;
+            }
+
+            let results = medData.filter(med => {
+                if (med.primary !== currentPrimary) return false;
+
+                if (keyword !== "" && !med.name.includes(keyword) && !med.nature.includes(keyword) && !med.meridians.includes(keyword)) {
+                    return false;
+                }
+
+                for (let tag of activeTags) {
+                    let searchKey = tag;
+                    if(tag === "熱/溫") searchKey = "熱|溫";
+                    if(tag === "寒/涼") searchKey = "寒|涼";
+                    let categoryKey = tag.replace('類',''); 
+
+                    const inCategory = med.secondary.includes(categoryKey);
+                    const inRarity = med.rarity === tag;
+                    const inMeridians = med.meridians.includes(tag);
+                    const regex = new RegExp(searchKey, 'g');
+                    const inNature = regex.test(med.nature);
+
+                    if (!(inCategory || inRarity || inMeridians || inNature)) {
+                        return false; 
+                    }
+                }
+                return true;
+            });
+
+            let conditionsText = activeTags.join(' + ');
+            if (keyword) conditionsText = conditionsText ? `${keyword} + ${conditionsText}` : keyword;
+            document.getElementById('sidebarTitle').innerText = `篩選: [ ${conditionsText} ] (共 ${results.length} 種)`;
+            
+            sidebarContent.innerHTML = '';
+            if(results.length > 0) {
+                const grid = document.createElement('div');
+                grid.className = 'grid-container';
+                results.forEach(med => grid.innerHTML += generateCardHTML(med));
+                sidebarContent.appendChild(grid);
+            } else {
+                sidebarContent.innerHTML = `<p style="color:var(--text-muted); text-align:center; margin-top:30px;">找不到符合全部條件的藥物。<br><br>請嘗試減少一些標籤。</p>`;
+            }
+            
+            sidebar.classList.add('active');
+            overlay.classList.add('active');
+        }
+
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.remove('active');
+            document.getElementById('sidebarOverlay').classList.remove('active');
+        }
+
+        window.onload = () => {
+            renderTagPanels();
+            switchCategory('植物藥');
+        };
+		
+    </script>
+</body>
+</html>
