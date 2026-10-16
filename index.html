@@ -168,6 +168,24 @@
             opacity: 0; transform: translateY(60px) rotateX(30deg) scale(0.8); animation: gachaReveal 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
         @keyframes gachaReveal { to { opacity: 1; transform: translateY(0) rotateX(0) scale(1); } }
+		/* 單抽按鈕樣式 */
+        .btn-single {
+            background: linear-gradient(45deg, #3498DB, #2980B9); color: #fff; border: none; padding: 10px 20px; font-weight: bold; border-radius: 20px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-left: 10px; font-size: 16px; transition: transform 0.2s;
+        }
+        .btn-single:hover { transform: scale(1.05); }
+
+        /* 圖鑑進度文字 */
+        .progress-container { text-align: center; margin-bottom: 15px; font-weight: bold; color: var(--accent-color); font-size: 1.1em; letter-spacing: 1px; }
+
+        /* 未解鎖的卡牌樣式 (黑白、模糊、無連結) */
+        .card-locked { filter: grayscale(100%) opacity(0.6); pointer-events: none; }
+        .card-locked .med-name a { display: none; }
+        .card-locked .med-name::after { content: '❓ 未解鎖'; font-weight: bold; color: #999; }
+        .card-locked .med-content { filter: blur(4px); user-select: none; }
+        
+        /* 修改抽卡排版，讓單抽也能置中顯示 */
+        .gacha-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 30px; perspective: 1000px; }
+        .gacha-grid > div { width: 220px; }
     </style>
 </head>
 <body>
@@ -182,8 +200,11 @@
 
     <div class="search-container">
         <input type="text" id="searchInput" placeholder="手動搜尋藥名 (如: 當歸)..." onkeypress="if(event.key==='Enter') executeSearch()">
-        <button onclick="executeSearch()">搜尋</button>
-		<button class="gacha-btn" onclick="startGacha10()">✨ 十連祈願</button>
+        <button onclick="executeSearch()">搜尋</button><!-- 新增單抽與十連抽按鈕 -->
+        <button class="btn-single" onclick="startGacha1()">🔮 單次祈願</button>
+        <button class="gacha-btn" onclick="startGacha10()">✨ 十連祈願</button>
+		<!-- 新增圖鑑進度顯示 -->
+    <div class="progress-container" id="collection-progress">📖 圖鑑收集進度: 0 / 0</div>
     </div>
 
     <div id="main-tags-panel"></div>
@@ -286,7 +307,11 @@
             return "bg-neutral";
         }
 
-        function generateCardHTML(med) {
+        function generateCardHTML(med, isGachaReveal = false) {
+            // 判斷是否已解鎖 (如果正在抽卡動畫中，則強制顯示為解鎖)
+            const isUnlocked = isGachaReveal || unlockedMeds.includes(med.name);
+            const lockedClass = isUnlocked ? "" : "card-locked";
+
             const searchUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent('中藥 ' + med.name)}`;
             const bgClass = getCardBgClass(med.nature);
             const emoji = med.secondary.includes("濕") ? "💧" : (med.secondary.includes("乾") ? "🍂" : "🌿");
@@ -298,7 +323,7 @@
             });
             
             return `
-                <div class="med-card ${bgClass}">
+                <div class="med-card ${bgClass} ${lockedClass}">
                     <div class="emoji-indicator" title="${med.secondary}">${emoji}</div>
                     <div class="med-name">
                         <a href="${searchUrl}" target="_blank" title="查看圖片">${med.name}</a>
@@ -432,27 +457,47 @@
             renderTagPanels();
             switchCategory('植物藥');
         };
-		// ================== 十連抽系統邏輯 ==================
-        function rollRarity() {
-            const rand = Math.random() * 100;
-            if (rand < 1) return 'UR';     // 1% 傳說
-            if (rand < 5) return 'SSR';    // 4% 稀有
-            if (rand < 15) return 'SR';    // 10% 史詩
-            if (rand < 50) return 'R';     // 35% 進階
-            return 'N';                    // 50% 常見
+		// ================== 圖鑑系統與抽卡邏輯 ==================
+        // 1. 從手機快取讀取已解鎖的藥材名單
+        let unlockedMeds = JSON.parse(localStorage.getItem('bencao_unlocked')) || [];
+
+        function saveUnlock(name) {
+            if (!unlockedMeds.includes(name)) {
+                unlockedMeds.push(name);
+                localStorage.setItem('bencao_unlocked', JSON.stringify(unlockedMeds));
+            }
         }
 
-        // 第十抽保底 SR 或以上
+        function updateProgress() {
+            if (typeof medData === 'undefined') return;
+            document.getElementById('collection-progress').innerText = `📖 圖鑑收集進度: ${unlockedMeds.length} / ${medData.length} 種`;
+        }
+
+        // 當網頁載入時，更新進度
+        const originalOnload = window.onload;
+        window.onload = () => {
+            if (originalOnload) originalOnload();
+            updateProgress();
+        };
+
+        function rollRarity() {
+            const rand = Math.random() * 100;
+            if (rand < 1) return 'UR';     
+            if (rand < 5) return 'SSR';    
+            if (rand < 15) return 'SR';    
+            if (rand < 50) return 'R';     
+            return 'N';                    
+        }
+
         function rollGuaranteedRarity() {
             const rand = Math.random() * 100;
-            if (rand < 2) return 'UR';     // 2%
-            if (rand < 12) return 'SSR';   // 10%
-            return 'SR';                   // 88% 保底 SR
+            if (rand < 2) return 'UR';     
+            if (rand < 12) return 'SSR';   
+            return 'SR';                   
         }
 
         function getMedByRarity(rarity) {
             const pool = medData.filter(m => m.rarity === rarity);
-            // 防錯機制：如果某個稀有度還沒建資料，自動降級避免報錯
             if (pool.length === 0) {
                 if(rarity === 'UR') return getMedByRarity('SSR');
                 if(rarity === 'SSR') return getMedByRarity('SR');
@@ -462,53 +507,63 @@
             return pool[Math.floor(Math.random() * pool.length)];
         }
 
-        function startGacha10() {
-            if (typeof medData === 'undefined' || medData.length === 0) {
-                alert("資料庫尚未載入，無法抽卡！"); return;
-            }
+        // 單次祈願
+        function startGacha1() {
+            if (typeof medData === 'undefined' || medData.length === 0) { alert("資料庫尚未載入！"); return; }
+            executeGachaAnimation(1);
+        }
 
+        // 十連祈願
+        function startGacha10() {
+            if (typeof medData === 'undefined' || medData.length === 0) { alert("資料庫尚未載入！"); return; }
+            executeGachaAnimation(10);
+        }
+
+        // 統一處理抽卡動畫與解鎖
+        function executeGachaAnimation(times) {
             const overlay = document.getElementById('gacha-overlay');
             const resultsGrid = document.getElementById('gacha-results');
             const closeBtn = document.querySelector('.gacha-close-btn');
 
-            // 初始化畫面
             resultsGrid.innerHTML = '';
             closeBtn.classList.remove('show');
             overlay.classList.add('active');
 
-            // 產生 10 張卡牌 (第 10 張保底)
             const pulls = [];
-            for (let i = 0; i < 10; i++) {
-                let rarity = (i === 9) ? rollGuaranteedRarity() : rollRarity();
-                pulls.push(getMedByRarity(rarity));
+            for (let i = 0; i < times; i++) {
+                // 十連抽的最後一張觸發保底
+                let rarity = (times === 10 && i === 9) ? rollGuaranteedRarity() : rollRarity();
+                let pulledMed = getMedByRarity(rarity);
+                pulls.push(pulledMed);
+                saveUnlock(pulledMed.name); // 儲存到解鎖名單
             }
 
-            // 逐張發牌特效 (每隔 300 毫秒彈出一張)
+            updateProgress(); // 抽卡瞬間更新進度數字
+
             pulls.forEach((med, index) => {
                 setTimeout(() => {
-                    // 重複利用我們先前寫好的卡片生成函數
                     const div = document.createElement('div');
-                    div.innerHTML = generateCardHTML(med);
+                    div.innerHTML = generateCardHTML(med, true); // true 表示這是抽卡結果，無視上鎖狀態
                     const cardEl = div.firstElementChild;
                     
                     cardEl.classList.add('gacha-card-anim');
-                    
-                    // SSR 和 UR 給予額外的發光特效
                     if (med.rarity === 'SSR') cardEl.style.boxShadow = '0 0 20px rgba(255, 215, 0, 0.8)';
                     if (med.rarity === 'UR') cardEl.style.boxShadow = '0 0 30px rgba(255, 0, 0, 0.8)';
 
                     resultsGrid.appendChild(cardEl);
 
-                    // 等最後一張卡牌飛出來後，顯示「收下藥材」按鈕
-                    if (index === 9) {
+                    // 最後一張卡出現後顯示按鈕
+                    if (index === times - 1) {
                         setTimeout(() => closeBtn.classList.add('show'), 600);
                     }
                 }, index * 300); 
             });
         }
 
+        // 關閉抽卡視窗並重整主畫面 (讓解鎖的卡牌亮起來)
         function closeGacha() {
             document.getElementById('gacha-overlay').classList.remove('active');
+            renderAllSections(); 
         }
     </script>
 </body>
