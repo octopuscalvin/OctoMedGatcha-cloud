@@ -509,7 +509,7 @@ const medData = [
     { name: "兔肉", primary: "動物藥", secondary: "濕寒", nature: "甘，涼", meridians: "肝、脾、大腸", rarity: "N" },
     { name: "豬肉", primary: "動物藥", secondary: "濕寒", nature: "甘、鹹，微寒", meridians: "脾、胃、腎", rarity: "N" },
     { name: "馬肉", primary: "動物藥", secondary: "濕寒", nature: "辛、苦，冷", meridians: "肝、脾", rarity: "N" },
-    { name: "豬髓", primary: "動物藥", secondary: "濕寒", nature: "甘，寒", meridians: "腎、腦", rarity: "R" }
+    { name: "豬髓", primary: "動物藥", secondary: "濕寒", nature: "甘，寒", meridians: "腎、腦", rarity: "R" },
 	
 	// ================== 增量包：《本草綱目拾遺》與《中華本草》SSR/UR 級稀有名貴中藥 (20種) ==================
     { name: "天山雪蓮", primary: "植物藥", secondary: "濕熱", nature: "苦，溫", meridians: "肝、腎", rarity: "SSR" },
