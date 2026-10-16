@@ -195,6 +195,14 @@
         .reset-btn:hover {
             background-color: #E74C3C; color: white; transform: scale(1.05);
         }
+		/* 管理員按鈕樣式 */
+        .admin-btn {
+            background-color: transparent; border: 1px solid #9B59B6; color: #9B59B6;
+            padding: 4px 10px; border-radius: 15px; cursor: pointer; font-size: 0.85em;
+            margin-left: 10px; transition: all 0.2s ease; vertical-align: middle;
+        }
+        .admin-btn:hover { background-color: #9B59B6; color: white; transform: scale(1.05); }
+        .admin-btn.active-admin { background-color: #9B59B6; color: white; border: 1px solid #8E44AD; }
     </style>
 </head>
 <body>
@@ -216,6 +224,8 @@
     <div class="progress-wrapper" style="text-align: center; margin-bottom: 15px;">
         <div class="progress-container" id="collection-progress" style="display: inline-block; margin-bottom: 0;">📖 圖鑑收集進度: 0 / 0</div>
         <button class="reset-btn" onclick="resetGachaSave()">🔄 刪檔重刷</button>
+		<!-- 新增管理員按鈕 -->
+        <button class="admin-btn" id="adminToggleBtn" onclick="toggleAdminMode()">🔐 管理員功能</button>
     </div>
     </div>
 
@@ -320,8 +330,8 @@
         }
 
         function generateCardHTML(med, isGachaReveal = false) {
-            // 判斷是否已解鎖 (如果正在抽卡動畫中，則強制顯示為解鎖)
-            const isUnlocked = isGachaReveal || unlockedMeds.includes(med.name);
+		// 加入 isAdminMode 的判斷，如果是管理員模式，則全部視為已解鎖
+            const isUnlocked = isGachaReveal || isAdminMode || unlockedMeds.includes(med.name);
             const lockedClass = isUnlocked ? "" : "card-locked";
 
             const searchUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent('中藥 ' + med.name)}`;
@@ -592,6 +602,40 @@
                 renderAllSections();
                 
                 alert("✨ 存檔已清空！祝你這次首抽能中 UR 天山雪蓮！");
+            }
+        }
+		// ================== 管理員上帝模式 ==================
+        let isAdminMode = false; // 預設為關閉
+
+        function toggleAdminMode() {
+            const adminBtn = document.getElementById('adminToggleBtn');
+            
+            // 如果目前不是管理員，要求輸入密碼
+            if (!isAdminMode) {
+                const pwd = prompt("請輸入管理員密碼以解鎖全圖鑑：");
+                
+                if (pwd === "640480") {
+                    isAdminMode = true;
+                    adminBtn.innerText = "🔓 退出管理員";
+                    adminBtn.classList.add('active-admin');
+                    alert("✅ 密碼正確！管理員模式已啟動，所有圖鑑暫時解鎖。");
+                    
+                    // 重新渲染畫面，此時 generateCardHTML 會因為 isAdminMode = true 讓所有卡牌亮起
+                    renderAllSections(); 
+                } else if (pwd !== null) {
+                    // 如果點了取消 (null)，不作反應；如果有輸入但錯誤，則跳出警告
+                    alert("❌ 密碼錯誤！");
+                }
+            } 
+            // 如果已經是管理員，則執行登出，恢復真實存檔
+            else {
+                isAdminMode = false;
+                adminBtn.innerText = "🔐 管理員功能";
+                adminBtn.classList.remove('active-admin');
+                alert("🔒 已退出管理員模式，恢復原圖鑑收集進度。");
+                
+                // 重新渲染畫面，讓尚未抽到的卡牌變回鎖定狀態
+                renderAllSections(); 
             }
         }
     </script>
