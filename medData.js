@@ -367,6 +367,7 @@ const medData = [
     { name: "豆腐", primary: "植物藥", secondary: "濕寒", nature: "甘，涼", meridians: "脾、胃、大腸", rarity: "N" },
 
     // ================== 動物藥 - 濕熱類 (完整 40種) ==================
+	
     // (主治：血肉有情之品，大補精血、溫腎壯陽、益氣養血)
     { name: "鹿茸", primary: "動物藥", secondary: "濕熱", nature: "甘、鹹，溫", meridians: "腎、肝", rarity: "SR" },
     { name: "鹿角膠", primary: "動物藥", secondary: "濕熱", nature: "甘、鹹，溫", meridians: "肝、腎", rarity: "SR" },
