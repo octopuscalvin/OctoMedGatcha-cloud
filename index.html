@@ -186,6 +186,15 @@
         /* 修改抽卡排版，讓單抽也能置中顯示 */
         .gacha-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 30px; perspective: 1000px; }
         .gacha-grid > div { width: 220px; }
+		/* 刪檔重刷按鈕樣式 */
+        .reset-btn {
+            background-color: transparent; border: 1px solid #E74C3C; color: #E74C3C;
+            padding: 4px 10px; border-radius: 15px; cursor: pointer; font-size: 0.85em;
+            margin-left: 15px; transition: all 0.2s ease; vertical-align: middle;
+        }
+        .reset-btn:hover {
+            background-color: #E74C3C; color: white; transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
@@ -203,8 +212,11 @@
         <button onclick="executeSearch()">搜尋</button><!-- 新增單抽與十連抽按鈕 -->
         <button class="btn-single" onclick="startGacha1()">🔮 單次祈願</button>
         <button class="gacha-btn" onclick="startGacha10()">✨ 十連祈願</button>
-		<!-- 新增圖鑑進度顯示 -->
-    <div class="progress-container" id="collection-progress">📖 圖鑑收集進度: 0 / 0</div>
+		<!-- 包含圖鑑進度與刪檔重刷按鈕的容器 -->
+    <div class="progress-wrapper" style="text-align: center; margin-bottom: 15px;">
+        <div class="progress-container" id="collection-progress" style="display: inline-block; margin-bottom: 0;">📖 圖鑑收集進度: 0 / 0</div>
+        <button class="reset-btn" onclick="resetGachaSave()">🔄 刪檔重刷</button>
+    </div>
     </div>
 
     <div id="main-tags-panel"></div>
@@ -564,6 +576,23 @@
         function closeGacha() {
             document.getElementById('gacha-overlay').classList.remove('active');
             renderAllSections(); 
+        }// 刪檔重刷首抽功能
+        function resetGachaSave() {
+            // 加入二次確認，防止玩家誤觸導致心血白費
+            const confirmReset = confirm("⚠️ 警告：確定要刪除所有存檔並重新開始嗎？\n\n你的圖鑑將會全部清空，此動作無法復原！");
+            
+            if (confirmReset) {
+                // 1. 清空瀏覽器中的存檔
+                localStorage.removeItem('bencao_unlocked');
+                // 2. 將當前記憶體中的解鎖名單清空
+                unlockedMeds = [];
+                // 3. 更新畫面上的進度數字
+                updateProgress();
+                // 4. 重新渲染主畫面（讓所有卡牌重新變回灰色的未解鎖狀態）
+                renderAllSections();
+                
+                alert("✨ 存檔已清空！祝你這次首抽能中 UR 天山雪蓮！");
+            }
         }
     </script>
 </body>
