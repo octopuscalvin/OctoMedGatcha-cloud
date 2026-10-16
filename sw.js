@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bencao-cache-v1';
+const CACHE_NAME = 'bencao-cache-v2';
 const urlsToCache = [
   '/OctoMedGatcha-cloud/',
   '/OctoMedGatcha-cloud/index.html',
@@ -18,13 +18,21 @@ self.addEventListener('install', event => {
   );
 });
 
-// 攔截網路請求，若有快取則讀取快取 (實現離線功能)
+// 攔截網路請求：網路優先 (Network First)，若斷網則退回快取 (Fallback to Cache)
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request)
+    fetch(event.request)
       .then(response => {
-        // 快取中有就回傳，沒有就去網路抓
-        return response || fetch(event.request);
+        // 如果有網路且成功抓到新檔案，就把它偷偷存進快取，然後顯示給使用者
+        const responseClone = response.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, responseClone);
+        });
+        return response;
+      })
+      .catch(() => {
+        // 如果抓取失敗 (例如斷網 / 飛航模式)，就去快取裡找之前存過的舊檔案
+        return caches.match(event.request);
       })
   );
 });
