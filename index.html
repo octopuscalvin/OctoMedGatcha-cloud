@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>本草綱目 - 藥性抽卡檢索系統 (Beta)</title>
-	<base href="/OctoMedGatcha-cloud/">
-	<link rel="manifest" href="manifest.json">
+    <base href="/OctoMedGatcha-cloud/">
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#D9A05B">
     <link rel="apple-touch-icon" href="icon-192.png">
     <style>
+        /* ===== 1. 全域與色彩設定 ===== */
         :root {
             --bg-color: #F8F9FA;
             --text-main: #333333;
@@ -40,7 +41,8 @@
         h1 { text-align: center; color: var(--text-main); margin-bottom: 5px; }
         .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 20px; font-size: 0.9em; }
 
-        .filter-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 15px; }
+        /* ===== 2. 大類切換按鈕 ===== */
+        .filter-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; }
         .filter-btn {
             background-color: #fff; border: 2px solid var(--accent-color);
             color: var(--text-main); padding: 8px 25px; font-size: 16px;
@@ -48,21 +50,39 @@
         }
         .filter-btn.active, .filter-btn:hover { background-color: var(--accent-color); color: #fff; }
 
-        .search-container { display: flex; justify-content: center; margin-bottom: 15px; gap: 10px; }
-        .search-container input {
-            padding: 10px 15px; width: 100%; max-width: 300px;
-            border: 1px solid var(--border-color); border-radius: 20px;
-            background-color: #fff; color: var(--text-main); font-size: 15px; outline: none;
+        /* ===== 3. 搜尋與抽卡區塊 (修復手機版拉長變形) ===== */
+        .search-container { 
+            display: flex; flex-wrap: wrap; justify-content: center; align-items: center; 
+            gap: 15px; margin-bottom: 20px; 
         }
-        .search-container input:focus { border-color: var(--accent-color); }
-        .search-container button {
+        
+        .search-box { display: flex; gap: 8px; width: 100%; max-width: 400px; }
+        .search-box input {
+            flex-grow: 1; padding: 10px 15px; border: 1px solid var(--border-color); 
+            border-radius: 20px; background-color: #fff; color: var(--text-main); 
+            font-size: 15px; outline: none;
+        }
+        .search-box input:focus { border-color: var(--accent-color); }
+        .search-box button {
             padding: 10px 20px; background-color: var(--text-main); color: #fff;
-            border: none; border-radius: 20px; cursor: pointer; font-size: 15px;
+            border: none; border-radius: 20px; cursor: pointer; font-size: 15px; white-space: nowrap;
         }
 
-        /* 快速檢索標籤面板 */
+        .gacha-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        
+        /* 祈願按鈕樣式 (加上 white-space 鎖死文字不換行) */
+        .btn-single, .gacha-btn {
+            white-space: nowrap; border: none; padding: 10px 20px; font-weight: bold; 
+            border-radius: 20px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+            color: #fff; font-size: 16px; transition: transform 0.2s;
+        }
+        .btn-single { background: linear-gradient(45deg, #3498DB, #2980B9); }
+        .gacha-btn { background: linear-gradient(45deg, #FFD700, #FFA500); }
+        .btn-single:hover, .gacha-btn:hover { transform: scale(1.05); }
+
+        /* ===== 4. 快速檢索標籤面板 ===== */
         .quick-tags-container {
-            max-width: 800px; margin: 0 auto 30px auto; display: flex; flex-direction: column; gap: 12px;
+            max-width: 800px; margin: 0 auto 20px auto; display: flex; flex-direction: column; gap: 12px;
             background: #fff; padding: 15px 20px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 2px 5px rgba(0,0,0,0.02);
         }
         .tag-group { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
@@ -73,7 +93,6 @@
             border-radius: 15px; font-size: 0.85em; cursor: pointer; transition: all 0.2s ease; user-select: none;
         }
         .quick-tag:hover { border-color: var(--accent-color); transform: scale(1.05); }
-        
         .quick-tag.active { background: var(--accent-color); color: #fff; border-color: var(--accent-color); box-shadow: 0 2px 5px rgba(217, 160, 91, 0.4); font-weight: bold; }
         
         .qt-N:hover { border-color: #9E9E9E; color: #9E9E9E; } .qt-N.active { background: #9E9E9E; color: #fff; border-color: #9E9E9E; }
@@ -82,6 +101,30 @@
         .qt-SSR:hover { border-color: #FF8C00; color: #FF8C00; } .qt-SSR.active { background: #FF8C00; color: #fff; border-color: #FF8C00; }
         .qt-UR:hover { border-color: #C0392B; color: #C0392B; } .qt-UR.active { background: #C0392B; color: #fff; border-color: #C0392B; }
 
+        /* ===== 5. 圖鑑進度與系統管理區塊 (全新儀表板設計) ===== */
+        .progress-wrapper {
+            max-width: 800px; margin: 0 auto 30px auto; padding: 15px 20px;
+            background: #fff; border-radius: 12px; border: 1px dashed var(--accent-color);
+            display: flex; flex-direction: column; align-items: center; gap: 12px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+        .progress-container { font-weight: bold; color: var(--accent-color); font-size: 1.1em; letter-spacing: 1px; }
+        .admin-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+
+        /* 管理按鈕樣式 */
+        .reset-btn, .admin-btn, .update-btn {
+            background-color: transparent; padding: 6px 15px; border-radius: 20px; 
+            cursor: pointer; font-size: 0.9em; white-space: nowrap; transition: all 0.2s ease;
+        }
+        .reset-btn { border: 1px solid #E74C3C; color: #E74C3C; }
+        .reset-btn:hover { background-color: #E74C3C; color: white; transform: scale(1.05); }
+        .admin-btn { border: 1px solid #9B59B6; color: #9B59B6; }
+        .admin-btn:hover { background-color: #9B59B6; color: white; transform: scale(1.05); }
+        .admin-btn.active-admin { background-color: #9B59B6; color: white; border: 1px solid #8E44AD; }
+        .update-btn { border: 1px solid #27AE60; color: #27AE60; }
+        .update-btn:hover { background-color: #27AE60; color: white; transform: scale(1.05); }
+
+        /* ===== 6. 藥材卡片顯示區 ===== */
         .category-section { max-width: 1000px; margin: 0 auto 40px auto; }
         .category-title { border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-bottom: 20px; color: var(--accent-color); display: flex; justify-content: space-between;}
         
@@ -89,6 +132,12 @@
         
         .med-card { border: 1px solid rgba(0,0,0,0.05); border-radius: 12px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: transform 0.2s, box-shadow 0.2s; position: relative; min-height: 120px; }
         .med-card:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.08); }
+
+        /* 未解鎖的卡牌樣式 */
+        .card-locked { filter: grayscale(100%) opacity(0.6); pointer-events: none; }
+        .card-locked .med-name a { display: none; }
+        .card-locked .med-name::after { content: '❓ 未解鎖'; font-weight: bold; color: #999; }
+        .card-locked .med-content { filter: blur(4px); user-select: none; }
 
         .bg-hot { background-color: var(--card-hot); border-color: #FAD4D4; }
         .bg-warm { background-color: var(--card-warm); border-color: #FCE1C3; }
@@ -109,8 +158,6 @@
         .med-name a { font-size: 1.25em; font-weight: bold; color: var(--accent-color); text-decoration: none; border-bottom: 1px dashed var(--accent-color); }
         .med-content { margin-top: 10px; font-size: 0.9em; color: var(--text-main); }
         .med-nature, .med-meridians { margin-bottom: 5px; }
-
-        .tag-link { cursor: pointer; border-bottom: 1px dotted; padding-bottom: 1px; }
         .temp-hot { color: var(--hl-hot); font-weight: bold; }
         .temp-cold { color: var(--hl-cold); font-weight: bold; }
         .temp-neutral { color: var(--hl-neutral); font-weight: bold; }
@@ -119,7 +166,7 @@
         .load-more-btn { background-color: white; border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px 30px; border-radius: 20px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
         .load-more-btn:hover { background-color: var(--border-color); color: var(--text-main); }
 
-        /* 側邊欄 */
+        /* ===== 7. 側邊欄與抽卡滿版特效 ===== */
         .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 998; opacity: 0; visibility: hidden; transition: all 0.3s; }
         .sidebar-overlay.active { opacity: 1; visibility: visible; }
         .sidebar { position: fixed; top: 0; right: -450px; width: 400px; max-width: 90vw; height: 100vh; background: #fff; box-shadow: -4px 0 15px rgba(0,0,0,0.2); z-index: 999; transition: right 0.3s; overflow-y: auto; padding: 20px; box-sizing: border-box; }
@@ -131,78 +178,31 @@
         .clear-btn:hover { background: #E74C3C; color: #fff; }
         .close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-muted); }
         .sidebar .grid-container { grid-template-columns: 1fr; } 
-        
         .sidebar .quick-tags-container { margin-bottom: 20px; padding: 10px; border: none; background: #F4F6F7; border-radius: 8px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); }
         .sidebar .tag-group { gap: 4px; margin-bottom: 4px; }
         .sidebar .tag-label { display: none; } 
         .sidebar .quick-tag { padding: 3px 8px; font-size: 0.75em; }
 
-        @media (max-width: 600px) { .grid-container { grid-template-columns: 1fr; } .tag-label { width: 100%; margin-bottom: 2px; } }
-		
-		/* ===== 十連抽動畫專屬樣式 ===== */
-        .gacha-btn {
-            background: linear-gradient(45deg, #FFD700, #FFA500); color: #fff; border: none; padding: 10px 20px; font-weight: bold; border-radius: 20px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-left: 10px; font-size: 16px; transition: transform 0.2s;
-        }
-        .gacha-btn:hover { transform: scale(1.05); }
-
-        .gacha-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: all 0.3s;
-        }
+        .gacha-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: all 0.3s; }
         .gacha-overlay.active { opacity: 1; visibility: visible; }
-        
         .gacha-container { width: 95%; max-width: 1200px; text-align: center; }
         .gacha-title { color: #D9A05B; font-size: 2.2em; margin-bottom: 20px; text-shadow: 0 0 15px rgba(217,160,91,0.6); letter-spacing: 2px;}
         
-        /* 抽卡結果排版：桌機版 5欄，手機版 2欄 */
-        .gacha-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 30px; perspective: 1000px; }
-        @media (max-width: 800px) { .gacha-grid { grid-template-columns: repeat(2, 1fr); } }
+        .gacha-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 30px; perspective: 1000px; }
+        .gacha-grid > div { width: 220px; }
         
-        .gacha-close-btn {
-            padding: 12px 50px; background: #D9A05B; color: white; border: none; border-radius: 30px; font-size: 1.2em; cursor: pointer; transition: 0.3s; opacity: 0; transform: translateY(20px); pointer-events: none;
-        }
+        .gacha-close-btn { padding: 12px 50px; background: #D9A05B; color: white; border: none; border-radius: 30px; font-size: 1.2em; cursor: pointer; transition: 0.3s; opacity: 0; transform: translateY(20px); pointer-events: none; }
         .gacha-close-btn.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
         .gacha-close-btn:hover { background: #C0392B; }
 
-        /* 卡牌飛入動畫 */
-        .gacha-card-anim {
-            opacity: 0; transform: translateY(60px) rotateX(30deg) scale(0.8); animation: gachaReveal 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
+        .gacha-card-anim { opacity: 0; transform: translateY(60px) rotateX(30deg) scale(0.8); animation: gachaReveal 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         @keyframes gachaReveal { to { opacity: 1; transform: translateY(0) rotateX(0) scale(1); } }
-		/* 單抽按鈕樣式 */
-        .btn-single {
-            background: linear-gradient(45deg, #3498DB, #2980B9); color: #fff; border: none; padding: 10px 20px; font-weight: bold; border-radius: 20px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-left: 10px; font-size: 16px; transition: transform 0.2s;
-        }
-        .btn-single:hover { transform: scale(1.05); }
 
-        /* 圖鑑進度文字 */
-        .progress-container { text-align: center; margin-bottom: 15px; font-weight: bold; color: var(--accent-color); font-size: 1.1em; letter-spacing: 1px; }
-
-        /* 未解鎖的卡牌樣式 (黑白、模糊、無連結) */
-        .card-locked { filter: grayscale(100%) opacity(0.6); pointer-events: none; }
-        .card-locked .med-name a { display: none; }
-        .card-locked .med-name::after { content: '❓ 未解鎖'; font-weight: bold; color: #999; }
-        .card-locked .med-content { filter: blur(4px); user-select: none; }
-        
-        /* 修改抽卡排版，讓單抽也能置中顯示 */
-        .gacha-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 30px; perspective: 1000px; }
-        .gacha-grid > div { width: 220px; }
-		/* 刪檔重刷按鈕樣式 */
-        .reset-btn {
-            background-color: transparent; border: 1px solid #E74C3C; color: #E74C3C;
-            padding: 4px 10px; border-radius: 15px; cursor: pointer; font-size: 0.85em;
-            margin-left: 15px; transition: all 0.2s ease; vertical-align: middle;
+        /* 手機版排版響應式微調 */
+        @media (max-width: 600px) { 
+            .grid-container { grid-template-columns: 1fr; } 
+            .tag-label { width: 100%; margin-bottom: 2px; } 
         }
-        .reset-btn:hover {
-            background-color: #E74C3C; color: white; transform: scale(1.05);
-        }
-		/* 管理員按鈕樣式 */
-        .admin-btn {
-            background-color: transparent; border: 1px solid #9B59B6; color: #9B59B6;
-            padding: 4px 10px; border-radius: 15px; cursor: pointer; font-size: 0.85em;
-            margin-left: 10px; transition: all 0.2s ease; vertical-align: middle;
-        }
-        .admin-btn:hover { background-color: #9B59B6; color: white; transform: scale(1.05); }
-        .admin-btn.active-admin { background-color: #9B59B6; color: white; border: 1px solid #8E44AD; }
     </style>
 </head>
 <body>
@@ -210,28 +210,41 @@
     <h1>本草綱目 藥性抽卡系統</h1>
     <div class="subtitle">💧濕 / 🍂乾 / 🌿中 | 稀有度：N (常見) < R < SR < SSR < UR (傳說)</div>
 
+    <!-- 1. 大類切換 -->
     <div class="filter-container">
         <button class="filter-btn active" onclick="switchCategory('植物藥')">植物藥</button>
         <button class="filter-btn" onclick="switchCategory('動物藥')">動物藥</button>
     </div>
 
+    <!-- 2. 搜尋與祈願功能區 -->
     <div class="search-container">
-        <input type="text" id="searchInput" placeholder="手動搜尋藥名 (如: 當歸)..." onkeypress="if(event.key==='Enter') executeSearch()">
-        <button onclick="executeSearch()">搜尋</button><!-- 新增單抽與十連抽按鈕 -->
-        <button class="btn-single" onclick="startGacha1()">🔮 單次祈願</button>
-        <button class="gacha-btn" onclick="startGacha10()">✨ 十連祈願</button>
-		<!-- 包含圖鑑進度與刪檔重刷按鈕的容器 -->
-    <div class="progress-wrapper" style="text-align: center; margin-bottom: 15px;">
-        <div class="progress-container" id="collection-progress" style="display: inline-block; margin-bottom: 0;">📖 圖鑑收集進度: 0 / 0</div>
-        <button class="reset-btn" onclick="resetGachaSave()">🔄 刪檔重刷</button>
-		<!-- 新增管理員按鈕 -->
-        <button class="admin-btn" id="adminToggleBtn" onclick="toggleAdminMode()">🔐 管理員功能</button>
-    </div>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="手動搜尋藥名 (如: 當歸)..." onkeypress="if(event.key==='Enter') executeSearch()">
+            <button onclick="executeSearch()">搜尋</button>
+        </div>
+        <div class="gacha-actions">
+            <button class="btn-single" onclick="startGacha1()">🔮 單次祈願</button>
+            <button class="gacha-btn" onclick="startGacha10()">✨ 十連祈願</button>
+        </div>
     </div>
 
+    <!-- 3. 快速檢索標籤面板 -->
     <div id="main-tags-panel"></div>
+
+    <!-- 4. 圖鑑進度與系統管理區塊 (移至標籤面板下方，加上 Dashboard 邊框) -->
+    <div class="progress-wrapper">
+        <div class="progress-container" id="collection-progress">📖 圖鑑收集進度: 0 / 0 種</div>
+        <div class="admin-actions">
+            <button class="reset-btn" onclick="resetGachaSave()">🔄 刪檔重刷</button>
+            <button class="admin-btn" id="adminToggleBtn" onclick="toggleAdminMode()">🔐 管理員功能</button>
+            <button class="update-btn" onclick="forceUpdateApp()">📥 檢查更新</button>
+        </div>
+    </div>
+
+    <!-- 5. 藥材卡片顯示區 -->
     <div id="content-area"></div>
-	<!-- 十連抽動畫滿版視窗 -->
+
+    <!-- 十連抽動畫滿版視窗 -->
     <div id="gacha-overlay" class="gacha-overlay">
         <div class="gacha-container">
             <h2 class="gacha-title">✨ 藥典祈願結果 ✨</h2>
@@ -240,6 +253,7 @@
         </div>
     </div>
 
+    <!-- 側邊欄檢索面板 -->
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -330,7 +344,7 @@
         }
 
         function generateCardHTML(med, isGachaReveal = false) {
-		// 加入 isAdminMode 的判斷，如果是管理員模式，則全部視為已解鎖
+            // 加入 isAdminMode 的判斷，如果是管理員模式，則全部視為已解鎖
             const isUnlocked = isGachaReveal || isAdminMode || unlockedMeds.includes(med.name);
             const lockedClass = isUnlocked ? "" : "card-locked";
 
@@ -479,8 +493,8 @@
             renderTagPanels();
             switchCategory('植物藥');
         };
-		// ================== 圖鑑系統與抽卡邏輯 ==================
-        // 1. 從手機快取讀取已解鎖的藥材名單
+
+        // ================== 圖鑑系統與抽卡邏輯 ==================
         let unlockedMeds = JSON.parse(localStorage.getItem('bencao_unlocked')) || [];
 
         function saveUnlock(name) {
@@ -495,7 +509,6 @@
             document.getElementById('collection-progress').innerText = `📖 圖鑑收集進度: ${unlockedMeds.length} / ${medData.length} 種`;
         }
 
-        // 當網頁載入時，更新進度
         const originalOnload = window.onload;
         window.onload = () => {
             if (originalOnload) originalOnload();
@@ -529,19 +542,16 @@
             return pool[Math.floor(Math.random() * pool.length)];
         }
 
-        // 單次祈願
         function startGacha1() {
             if (typeof medData === 'undefined' || medData.length === 0) { alert("資料庫尚未載入！"); return; }
             executeGachaAnimation(1);
         }
 
-        // 十連祈願
         function startGacha10() {
             if (typeof medData === 'undefined' || medData.length === 0) { alert("資料庫尚未載入！"); return; }
             executeGachaAnimation(10);
         }
 
-        // 統一處理抽卡動畫與解鎖
         function executeGachaAnimation(times) {
             const overlay = document.getElementById('gacha-overlay');
             const resultsGrid = document.getElementById('gacha-results');
@@ -553,19 +563,18 @@
 
             const pulls = [];
             for (let i = 0; i < times; i++) {
-                // 十連抽的最後一張觸發保底
                 let rarity = (times === 10 && i === 9) ? rollGuaranteedRarity() : rollRarity();
                 let pulledMed = getMedByRarity(rarity);
                 pulls.push(pulledMed);
-                saveUnlock(pulledMed.name); // 儲存到解鎖名單
+                saveUnlock(pulledMed.name);
             }
 
-            updateProgress(); // 抽卡瞬間更新進度數字
+            updateProgress(); 
 
             pulls.forEach((med, index) => {
                 setTimeout(() => {
                     const div = document.createElement('div');
-                    div.innerHTML = generateCardHTML(med, true); // true 表示這是抽卡結果，無視上鎖狀態
+                    div.innerHTML = generateCardHTML(med, true); 
                     const cardEl = div.firstElementChild;
                     
                     cardEl.classList.add('gacha-card-anim');
@@ -574,7 +583,6 @@
 
                     resultsGrid.appendChild(cardEl);
 
-                    // 最後一張卡出現後顯示按鈕
                     if (index === times - 1) {
                         setTimeout(() => closeBtn.classList.add('show'), 600);
                     }
@@ -582,60 +590,65 @@
             });
         }
 
-        // 關閉抽卡視窗並重整主畫面 (讓解鎖的卡牌亮起來)
         function closeGacha() {
             document.getElementById('gacha-overlay').classList.remove('active');
             renderAllSections(); 
-        }// 刪檔重刷首抽功能
+        }
+
+        // ================== 刪檔重刷功能 ==================
         function resetGachaSave() {
-            // 加入二次確認，防止玩家誤觸導致心血白費
             const confirmReset = confirm("⚠️ 警告：確定要刪除所有存檔並重新開始嗎？\n\n你的圖鑑將會全部清空，此動作無法復原！");
-            
             if (confirmReset) {
-                // 1. 清空瀏覽器中的存檔
                 localStorage.removeItem('bencao_unlocked');
-                // 2. 將當前記憶體中的解鎖名單清空
                 unlockedMeds = [];
-                // 3. 更新畫面上的進度數字
                 updateProgress();
-                // 4. 重新渲染主畫面（讓所有卡牌重新變回灰色的未解鎖狀態）
                 renderAllSections();
-                
                 alert("✨ 存檔已清空！祝你這次首抽能中 UR 天山雪蓮！");
             }
         }
-		// ================== 管理員上帝模式 ==================
-        let isAdminMode = false; // 預設為關閉
+
+        // ================== 管理員上帝模式 ==================
+        let isAdminMode = false;
 
         function toggleAdminMode() {
             const adminBtn = document.getElementById('adminToggleBtn');
-            
-            // 如果目前不是管理員，要求輸入密碼
             if (!isAdminMode) {
                 const pwd = prompt("請輸入管理員密碼以解鎖全圖鑑：");
-                
                 if (pwd === "640480") {
                     isAdminMode = true;
                     adminBtn.innerText = "🔓 退出管理員";
                     adminBtn.classList.add('active-admin');
                     alert("✅ 密碼正確！管理員模式已啟動，所有圖鑑暫時解鎖。");
-                    
-                    // 重新渲染畫面，此時 generateCardHTML 會因為 isAdminMode = true 讓所有卡牌亮起
                     renderAllSections(); 
                 } else if (pwd !== null) {
-                    // 如果點了取消 (null)，不作反應；如果有輸入但錯誤，則跳出警告
                     alert("❌ 密碼錯誤！");
                 }
-            } 
-            // 如果已經是管理員，則執行登出，恢復真實存檔
-            else {
+            } else {
                 isAdminMode = false;
                 adminBtn.innerText = "🔐 管理員功能";
                 adminBtn.classList.remove('active-admin');
                 alert("🔒 已退出管理員模式，恢復原圖鑑收集進度。");
-                
-                // 重新渲染畫面，讓尚未抽到的卡牌變回鎖定狀態
                 renderAllSections(); 
+            }
+        }
+
+        // ================== 強制更新 App 邏輯 ==================
+        function forceUpdateApp() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    for(let registration of registrations) {
+                        registration.unregister(); 
+                    }
+                    caches.keys().then(keys => {
+                        Promise.all(keys.map(key => caches.delete(key)))
+                        .then(() => {
+                            alert("✨ 已清除舊版快取，將為您重新載入最新版本！\n(您的圖鑑收集進度已保留)");
+                            window.location.reload(true); 
+                        });
+                    });
+                });
+            } else {
+                window.location.reload(true);
             }
         }
     </script>
