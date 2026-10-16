@@ -510,4 +510,26 @@ const medData = [
     { name: "豬肉", primary: "動物藥", secondary: "濕寒", nature: "甘、鹹，微寒", meridians: "脾、胃、腎", rarity: "N" },
     { name: "馬肉", primary: "動物藥", secondary: "濕寒", nature: "辛、苦，冷", meridians: "肝、脾", rarity: "N" },
     { name: "豬髓", primary: "動物藥", secondary: "濕寒", nature: "甘，寒", meridians: "腎、腦", rarity: "R" }
+	
+	// ================== 增量包：《本草綱目拾遺》與《中華本草》SSR/UR 級稀有名貴中藥 (20種) ==================
+    { name: "天山雪蓮", primary: "植物藥", secondary: "濕熱", nature: "苦，溫", meridians: "肝、腎", rarity: "SSR" },
+    { name: "野生千年人參王", primary: "植物藥", secondary: "濕熱", nature: "甘、微苦，微溫", meridians: "脾、肺、心", rarity: "UR" },
+    { name: "天然西藏冬蟲夏草", primary: "植物藥", secondary: "濕熱", nature: "甘，溫", meridians: "肺、腎", rarity: "UR" },
+    { name: "天然野生麝香", primary: "動物藥", secondary: "乾熱", nature: "辛，溫", meridians: "心、脾、肝", rarity: "UR" },
+    { name: "天然真龍涎香", primary: "動物藥", secondary: "濕熱", nature: "甘、酸，溫", meridians: "心、肺、肝", rarity: "UR" },
+    { name: "野生天然牛黃", primary: "動物藥", secondary: "乾寒", nature: "苦，涼", meridians: "心、肝", rarity: "UR" },
+    { name: "長白山野生靈芝", primary: "植物藥", secondary: "中性", nature: "甘，平", meridians: "心、肺、肝、腎", rarity: "UR" },
+    { name: "上品金絲燕窩", primary: "動物藥", secondary: "中性", nature: "甘，平", meridians: "肺、胃、腎", rarity: "SSR" },
+    { name: "天然野生虎骨 (歷史記載)", primary: "動物藥", secondary: "濕熱", nature: "辛、鹹，溫", meridians: "肝、腎", rarity: "UR" },
+    { name: "極品天然犀角 (歷史記載)", primary: "動物藥", secondary: "乾寒", nature: "苦、酸、鹹，寒", meridians: "心、肝、胃", rarity: "UR" },
+    { name: "藏紅花 (頂級番紅花)", primary: "植物藥", secondary: "中性", nature: "甘，平", meridians: "心、肝", rarity: "SSR" },
+    { name: "黑市極品熊膽粉", primary: "動物藥", secondary: "乾寒", nature: "苦，寒", meridians: "肝、膽、心", rarity: "UR" },
+    { name: "正品野生羚羊角", primary: "動物藥", secondary: "乾寒", nature: "鹹，寒", meridians: "肝、心", rarity: "SSR" },
+    { name: "天然生血琥珀", primary: "植物藥", secondary: "中性", nature: "甘，平", meridians: "心、肝、小腸", rarity: "SSR" },
+    { name: "極品鹿胎晶", primary: "動物藥", secondary: "濕熱", nature: "甘、鹹，溫", meridians: "肝、腎、心", rarity: "SSR" },
+    { name: "野生雪上一枝蒿", primary: "植物藥", secondary: "乾熱", nature: "苦、辛，大熱，有大毒", meridians: "肝、腎", rarity: "UR" },
+    { name: "高黎貢山野生血竭", primary: "植物藥", secondary: "乾熱", nature: "甘、鹹，平偏溫", meridians: "心、肝", rarity: "SSR" },
+    { name: "正宗廣東阿膠珠", primary: "動物藥", secondary: "濕熱", nature: "甘，平偏溫", meridians: "肺、肝、腎", rarity: "SSR" },
+    { name: "天然海狗腎", primary: "動物藥", secondary: "濕熱", nature: "鹹，大熱", meridians: "肝、腎", rarity: "UR" },
+    { name: "百年野生何首烏精", primary: "植物藥", secondary: "濕熱", nature: "苦、甘、澀，微溫", meridians: "肝、心、腎", rarity: "SSR" }
 ];

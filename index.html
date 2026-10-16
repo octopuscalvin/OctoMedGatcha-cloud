@@ -138,6 +138,36 @@
         .sidebar .quick-tag { padding: 3px 8px; font-size: 0.75em; }
 
         @media (max-width: 600px) { .grid-container { grid-template-columns: 1fr; } .tag-label { width: 100%; margin-bottom: 2px; } }
+		
+		/* ===== 十連抽動畫專屬樣式 ===== */
+        .gacha-btn {
+            background: linear-gradient(45deg, #FFD700, #FFA500); color: #fff; border: none; padding: 10px 20px; font-weight: bold; border-radius: 20px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-left: 10px; font-size: 16px; transition: transform 0.2s;
+        }
+        .gacha-btn:hover { transform: scale(1.05); }
+
+        .gacha-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: all 0.3s;
+        }
+        .gacha-overlay.active { opacity: 1; visibility: visible; }
+        
+        .gacha-container { width: 95%; max-width: 1200px; text-align: center; }
+        .gacha-title { color: #D9A05B; font-size: 2.2em; margin-bottom: 20px; text-shadow: 0 0 15px rgba(217,160,91,0.6); letter-spacing: 2px;}
+        
+        /* 抽卡結果排版：桌機版 5欄，手機版 2欄 */
+        .gacha-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 30px; perspective: 1000px; }
+        @media (max-width: 800px) { .gacha-grid { grid-template-columns: repeat(2, 1fr); } }
+        
+        .gacha-close-btn {
+            padding: 12px 50px; background: #D9A05B; color: white; border: none; border-radius: 30px; font-size: 1.2em; cursor: pointer; transition: 0.3s; opacity: 0; transform: translateY(20px); pointer-events: none;
+        }
+        .gacha-close-btn.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+        .gacha-close-btn:hover { background: #C0392B; }
+
+        /* 卡牌飛入動畫 */
+        .gacha-card-anim {
+            opacity: 0; transform: translateY(60px) rotateX(30deg) scale(0.8); animation: gachaReveal 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes gachaReveal { to { opacity: 1; transform: translateY(0) rotateX(0) scale(1); } }
     </style>
 </head>
 <body>
@@ -157,6 +187,14 @@
 
     <div id="main-tags-panel"></div>
     <div id="content-area"></div>
+	<!-- 十連抽動畫滿版視窗 -->
+    <div id="gacha-overlay" class="gacha-overlay">
+        <div class="gacha-container">
+            <h2 class="gacha-title">✨ 藥典祈願結果 ✨</h2>
+            <div id="gacha-results" class="gacha-grid"></div>
+            <button class="gacha-close-btn" onclick="closeGacha()">收下藥材</button>
+        </div>
+    </div>
 
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
     <div class="sidebar" id="sidebar">
@@ -393,6 +431,84 @@
             renderTagPanels();
             switchCategory('植物藥');
         };
+		// ================== 十連抽系統邏輯 ==================
+        function rollRarity() {
+            const rand = Math.random() * 100;
+            if (rand < 1) return 'UR';     // 1% 傳說
+            if (rand < 5) return 'SSR';    // 4% 稀有
+            if (rand < 15) return 'SR';    // 10% 史詩
+            if (rand < 50) return 'R';     // 35% 進階
+            return 'N';                    // 50% 常見
+        }
+
+        // 第十抽保底 SR 或以上
+        function rollGuaranteedRarity() {
+            const rand = Math.random() * 100;
+            if (rand < 2) return 'UR';     // 2%
+            if (rand < 12) return 'SSR';   // 10%
+            return 'SR';                   // 88% 保底 SR
+        }
+
+        function getMedByRarity(rarity) {
+            const pool = medData.filter(m => m.rarity === rarity);
+            // 防錯機制：如果某個稀有度還沒建資料，自動降級避免報錯
+            if (pool.length === 0) {
+                if(rarity === 'UR') return getMedByRarity('SSR');
+                if(rarity === 'SSR') return getMedByRarity('SR');
+                if(rarity === 'SR') return getMedByRarity('R');
+                return medData[Math.floor(Math.random() * medData.length)];
+            }
+            return pool[Math.floor(Math.random() * pool.length)];
+        }
+
+        function startGacha10() {
+            if (typeof medData === 'undefined' || medData.length === 0) {
+                alert("資料庫尚未載入，無法抽卡！"); return;
+            }
+
+            const overlay = document.getElementById('gacha-overlay');
+            const resultsGrid = document.getElementById('gacha-results');
+            const closeBtn = document.querySelector('.gacha-close-btn');
+
+            // 初始化畫面
+            resultsGrid.innerHTML = '';
+            closeBtn.classList.remove('show');
+            overlay.classList.add('active');
+
+            // 產生 10 張卡牌 (第 10 張保底)
+            const pulls = [];
+            for (let i = 0; i < 10; i++) {
+                let rarity = (i === 9) ? rollGuaranteedRarity() : rollRarity();
+                pulls.push(getMedByRarity(rarity));
+            }
+
+            // 逐張發牌特效 (每隔 300 毫秒彈出一張)
+            pulls.forEach((med, index) => {
+                setTimeout(() => {
+                    // 重複利用我們先前寫好的卡片生成函數
+                    const div = document.createElement('div');
+                    div.innerHTML = generateCardHTML(med);
+                    const cardEl = div.firstElementChild;
+                    
+                    cardEl.classList.add('gacha-card-anim');
+                    
+                    // SSR 和 UR 給予額外的發光特效
+                    if (med.rarity === 'SSR') cardEl.style.boxShadow = '0 0 20px rgba(255, 215, 0, 0.8)';
+                    if (med.rarity === 'UR') cardEl.style.boxShadow = '0 0 30px rgba(255, 0, 0, 0.8)';
+
+                    resultsGrid.appendChild(cardEl);
+
+                    // 等最後一張卡牌飛出來後，顯示「收下藥材」按鈕
+                    if (index === 9) {
+                        setTimeout(() => closeBtn.classList.add('show'), 600);
+                    }
+                }, index * 300); 
+            });
+        }
+
+        function closeGacha() {
+            document.getElementById('gacha-overlay').classList.remove('active');
+        }
     </script>
 </body>
 </html>
