@@ -61,7 +61,6 @@ const medData = [
     { name: "桂圓肉", primary: "植物藥", secondary: "濕熱", nature: "甘，溫", meridians: "心、脾", rarity: "N" },
     { name: "熟地", primary: "植物藥", secondary: "濕熱", nature: "甘，微溫", meridians: "肝、腎", rarity: "R" },
     { name: "黃茋", primary: "植物藥", secondary: "濕熱", nature: "甘，微溫", meridians: "肺、脾", rarity: "R" },
-    { name: "白朮", primary: "植物藥", secondary: "濕熱", nature: "苦、甘，溫", meridians: "脾、胃", rarity: "R" },
     { name: "甘草(炙)", primary: "植物藥", secondary: "濕熱", nature: "甘，溫", meridians: "心、肺、脾、胃", rarity: "N" },
     { name: "蜂蜜(炒)", primary: "植物藥", secondary: "濕熱", nature: "甘，溫", meridians: "肺、脾、大腸", rarity: "N" },
 
@@ -135,7 +134,6 @@ const medData = [
     { name: "石榴皮", primary: "植物藥", secondary: "乾熱", nature: "酸、澀，溫", meridians: "大腸", rarity: "N" },
     { name: "烏梅", primary: "植物藥", secondary: "乾熱", nature: "酸、澀，平偏溫", meridians: "肝、脾、肺、大腸", rarity: "N" },
     { name: "五味子", primary: "植物藥", secondary: "乾熱", nature: "酸、甘，溫", meridians: "肺、心、腎", rarity: "R" },
-    { name: "吳茱萸", primary: "植物藥", secondary: "乾熱", nature: "辛、苦，熱，有小毒", meridians: "肝、脾、胃、腎", rarity: "R" },
     { name: "蓽澄茄", primary: "植物藥", secondary: "乾熱", nature: "辛，溫", meridians: "脾、胃、腎、膀胱", rarity: "SR" },
     { name: "艾葉", primary: "植物藥", secondary: "乾熱", nature: "辛、苦，溫", meridians: "肝、脾、腎", rarity: "N" }, /* 偏燥偏溫 */
     { name: "紫菀", primary: "植物藥", secondary: "乾熱", nature: "苦、甘，微溫", meridians: "肺", rarity: "R" },
@@ -281,7 +279,6 @@ const medData = [
     { name: "苦丁茶", primary: "植物藥", secondary: "乾寒", nature: "苦、甘，大寒", meridians: "肝、肺、胃", rarity: "N" },
     { name: "菊花腦", primary: "植物藥", secondary: "乾寒", nature: "苦、辛，涼", meridians: "肺、肝", rarity: "N" },
     { name: "馬蘭", primary: "植物藥", secondary: "乾寒", nature: "辛，平偏涼", meridians: "肺、肝、胃", rarity: "N" },
-    { name: "白頭翁", primary: "植物藥", secondary: "乾寒", nature: "苦，寒", meridians: "胃、大腸", rarity: "R" },
     { name: "冬葵子", primary: "植物藥", secondary: "乾寒", nature: "甘，寒", meridians: "大腸、小腸、膀胱", rarity: "R" },
 
     // ================== 植物藥 - 濕寒類 (80種) ==================

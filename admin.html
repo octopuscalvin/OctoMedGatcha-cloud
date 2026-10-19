@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>資料庫管理後台 - 本草綱目</title>
+<style>
+    :root {
+        --bg-color: #F8F9FA; --text-main: #333333; --text-muted: #666666;
+        --accent-color: #D9A05B; --border-color: #E0E0E0;
+        --danger: #E74C3C; --ok: #27AE60; --warn: #F39C12;
+    }
+    * { box-sizing: border-box; }
+    body {
+        font-family: "PingFang TC", "Heiti TC", "微軟正黑體", sans-serif;
+        background-color: var(--bg-color); color: var(--text-main);
+        margin: 0; padding: 20px;
+    }
+    a.back-link { color: var(--text-muted); text-decoration: none; font-size: 0.9em; }
+    a.back-link:hover { color: var(--accent-color); }
+    h1 { margin: 10px 0 4px 0; }
+    .subtitle { color: var(--text-muted); margin-bottom: 20px; font-size: 0.9em; }
+
+    /* 密碼鎖定遮罩 */
+    #lockOverlay {
+        position: fixed; inset: 0; background: rgba(20,20,20,0.92); z-index: 2000;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .lock-box { background: #fff; padding: 30px 40px; border-radius: 12px; text-align: center; max-width: 360px; }
+    .lock-box h2 { margin-top: 0; color: var(--accent-color); }
+    .lock-box input { padding: 10px; width: 100%; border: 1px solid var(--border-color); border-radius: 8px; font-size: 16px; margin-bottom: 12px; }
+    .lock-box button { padding: 10px 24px; background: var(--accent-color); color: #fff; border: none; border-radius: 20px; cursor: pointer; font-size: 15px; }
+    .lock-note { font-size: 0.75em; color: var(--text-muted); margin-top: 14px; line-height: 1.5; }
+
+    #app { display: none; }
+
+    .toolbar {
+        display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+        background: #fff; border: 1px solid var(--border-color); border-radius: 10px;
+        padding: 14px; margin-bottom: 14px;
+    }
+    .toolbar .status { flex-grow: 1; font-size: 0.9em; color: var(--text-muted); min-width: 200px; }
+    .toolbar .status b { color: var(--text-main); }
+    .dirty-flag { color: var(--danger); font-weight: bold; }
+
+    button.btn {
+        padding: 8px 16px; border-radius: 18px; border: 1px solid var(--accent-color);
+        background: #fff; color: var(--accent-color); cursor: pointer; font-size: 0.9em;
+        white-space: nowrap; transition: all .15s;
+    }
+    button.btn:hover:not(:disabled) { background: var(--accent-color); color: #fff; }
+    button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    button.btn.primary { background: var(--ok); color: #fff; border-color: var(--ok); }
+    button.btn.primary:hover:not(:disabled) { background: #1f8e4d; }
+    button.btn.danger { border-color: var(--danger); color: var(--danger); }
+    button.btn.danger:hover:not(:disabled) { background: var(--danger); color: #fff; }
+
+    .filters {
+        display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+        background: #fff; border: 1px solid var(--border-color); border-radius: 10px;
+        padding: 10px 14px; margin-bottom: 14px;
+    }
+    .filters input[type=text], .filters select {
+        padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 14px; font-size: 0.9em;
+    }
+    .filters input[type=text] { min-width: 180px; }
+
+    .summary-bar { font-size: 0.85em; color: var(--text-muted); margin-bottom: 10px; }
+    .summary-bar .warn-text { color: var(--warn); font-weight: bold; }
+
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; }
+    thead th {
+        background: var(--accent-color); color: #fff; text-align: left; padding: 8px 6px; font-size: 0.8em;
+        position: sticky; top: 0;
+    }
+    tbody td { padding: 4px 6px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+    tbody tr:hover { background: #FFFBF2; }
+    tbody tr.dup-row td.name-cell { background: #FFF3CD; }
+    tbody tr.invalid-row { background: #FDEDEC; }
+
+    td input[type=text], td select {
+        width: 100%; padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.85em;
+        background: #fff; color: var(--text-main);
+    }
+    td input[type=text]:focus, td select:focus { border-color: var(--accent-color); outline: none; }
+    .col-name { width: 14%; } .col-primary { width: 8%; } .col-secondary { width: 8%; }
+    .col-nature { width: 20%; } .col-meridians { width: 13%; } .col-rarity { width: 7%; }
+    .col-note { width: 20%; } .col-actions { width: 5%; text-align: center; }
+
+    .dup-badge { font-size: 0.7em; color: var(--warn); white-space: nowrap; }
+    .del-btn { background: none; border: none; color: var(--danger); font-size: 1.1em; cursor: pointer; }
+    .del-btn:hover { transform: scale(1.2); }
+
+    .empty-state { text-align: center; color: var(--text-muted); padding: 60px 20px; }
+    .empty-state .big { font-size: 2em; margin-bottom: 10px; }
+
+    .toast {
+        position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+        background: #333; color: #fff; padding: 12px 24px; border-radius: 24px; font-size: 0.9em;
+        z-index: 3000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); opacity: 0; transition: opacity .25s;
+        pointer-events: none; max-width: 90vw; text-align: center;
+    }
+    .toast.show { opacity: 1; }
+    .toast.error { background: var(--danger); }
+</style>
+</head>
+<body>
+
+<a class="back-link" href="index.html">&larr; 返回抽卡頁面</a>
+<h1>🗂️ 資料庫管理後台</h1>
+<div class="subtitle">直接編輯 medData.js，儲存後請用 GitHub Desktop 檢查差異並 commit / push。</div>
+
+<div id="lockOverlay">
+    <div class="lock-box">
+        <h2>🔐 管理員驗證</h2>
+        <input type="password" id="pwdInput" placeholder="請輸入管理員密碼" onkeypress="if(event.key==='Enter') checkPassword()">
+        <button class="btn primary" style="width:100%;" onclick="checkPassword()">進入後台</button>
+        <div class="lock-note">⚠️ 此密碼僅能避免誤觸，無法防止查看網頁原始碼的人取得密碼，請勿用於保護機密資料。</div>
+    </div>
+</div>
+
+<div id="app">
+    <div class="toolbar">
+        <button class="btn primary" id="openBtn" onclick="openFile()">📂 開啟 medData.js</button>
+        <button class="btn" id="reloadBtn" onclick="reloadFile()" disabled>↺ 捨棄變更並重新載入</button>
+        <button class="btn" id="addBtn" onclick="addNewEntry()" disabled>➕ 新增藥材</button>
+        <button class="btn" id="backupBtn" onclick="downloadBackup()" disabled>⬇️ 下載備份</button>
+        <button class="btn primary" id="saveBtn" onclick="saveFile()" disabled>💾 儲存變更</button>
+        <div class="status" id="statusText"><b>尚未開啟檔案</b> — 請點選「開啟 medData.js」選擇你本機 clone 下來的檔案。</div>
+    </div>
+
+    <div class="filters" id="filtersBar" style="display:none;">
+        <input type="text" id="searchBox" placeholder="搜尋名稱 / 性味 / 歸經..." oninput="renderTable()">
+        <select id="filterPrimary" onchange="renderTable()"><option value="">全部大類</option></select>
+        <select id="filterSecondary" onchange="renderTable()"><option value="">全部分類</option></select>
+        <select id="filterRarity" onchange="renderTable()"><option value="">全部稀有度</option></select>
+        <button class="btn" onclick="clearFilters()">清除篩選</button>
+    </div>
+
+    <div class="summary-bar" id="summaryBar"></div>
+
+    <div id="tableWrap">
+        <div class="empty-state">
+            <div class="big">📭</div>
+            尚未載入資料，請先開啟 medData.js 檔案。
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const ADMIN_PASSWORD = "640480";
+const PRIMARY_OPTIONS = ["植物藥", "動物藥"];
+const SECONDARY_OPTIONS = ["濕熱", "乾熱", "中性", "濕寒", "乾寒"];
+const RARITY_OPTIONS = ["N", "R", "SR", "SSR", "UR"];
+const FS_ACCESS_SUPPORTED = 'showOpenFilePicker' in window;
+
+let fileHandle = null;      // FileSystemFileHandle (僅支援的瀏覽器可用)
+let originalSource = "";    // 開啟當下的原始檔案內容，供「捨棄變更」使用
+let entriesMap = new Map(); // uid -> entry { _uid, name, primary, secondary, nature, meridians, rarity, note }
+let nextUid = 1;
+let isDirty = false;
+
+function checkPassword() {
+    const val = document.getElementById('pwdInput').value;
+    if (val === ADMIN_PASSWORD) {
+        document.getElementById('lockOverlay').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        if (!FS_ACCESS_SUPPORTED) {
+            showToast('你的瀏覽器不支援直接寫入本機檔案，儲存時將改為下載新檔案，請手動覆蓋原本的 medData.js。', 'error');
+        }
+    } else {
+        alert('❌ 密碼錯誤');
+    }
+}
+
+function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (type === 'error' ? ' error' : '');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => { t.className = 'toast'; }, 4000);
+}
+
+function markDirty(v) {
+    isDirty = v;
+    document.getElementById('saveBtn').disabled = !v && entriesMap.size === 0;
+    const statusText = document.getElementById('statusText');
+    if (entriesMap.size > 0) {
+        statusText.innerHTML = `<b>${fileHandle ? fileHandle.name : 'medData.js'}</b> — 共 ${entriesMap.size} 筆` +
+            (v ? ' <span class="dirty-flag">● 尚未儲存</span>' : ' (已儲存)');
+    }
+}
+
+// ================== 檔案解析 ==================
+function parseMedDataSource(text) {
+    const match = text.match(/const\s+medData\s*=\s*(\[[\s\S]*\])\s*;/);
+    if (!match) throw new Error('找不到 "const medData = [...]" 陣列，檔案格式可能已變更。');
+    const arrText = match[1];
+
+    // 逐一擷取每個 { ... } 物件字面值 (內容中不含大括號，故此法安全)
+    const objRegex = /\{[^{}]*\}/g;
+    const objMatches = [...arrText.matchAll(objRegex)];
+    if (objMatches.length === 0) throw new Error('陣列中找不到任何藥材資料。');
+
+    const parsed = [];
+    for (let i = 0; i < objMatches.length; i++) {
+        const m = objMatches[i];
+        const objText = m[0];
+        const afterStart = m.index + objText.length;
+        const afterEnd = (i + 1 < objMatches.length) ? objMatches[i + 1].index : arrText.length;
+        const between = arrText.slice(afterStart, afterEnd);
+
+        let note = "";
+        const noteMatch = between.match(/\/\*([\s\S]*?)\*\//);
+        if (noteMatch) note = noteMatch[1].trim();
+
+        let obj;
+        try {
+            obj = new Function('"use strict"; return (' + objText + ');')();
+        } catch (e) {
+            throw new Error(`第 ${i + 1} 筆資料解析失敗，請檢查語法：${objText.slice(0, 60)}...`);
+        }
+        parsed.push({
+            _uid: nextUid++,
+            name: obj.name || "",
+            primary: obj.primary || PRIMARY_OPTIONS[0],
+            secondary: obj.secondary || SECONDARY_OPTIONS[0],
+            nature: obj.nature || "",
+            meridians: obj.meridians || "",
+            rarity: obj.rarity || RARITY_OPTIONS[0],
+            note: note
+        });
+    }
+    return parsed;
+}
+
+function jsStr(s) { return JSON.stringify(String(s == null ? "" : s)); }
+
+function serializeMedData(entries) {
+    const now = new Date();
+    const stamp = now.toISOString().slice(0, 16).replace('T', ' ');
+    let out = `// medData.js\n// 本草綱目 藥性抽卡系統 資料庫\n// 由管理後台自動產生，請勿手動調整格式 (最後更新: ${stamp})\n\nconst medData = [\n`;
+
+    PRIMARY_OPTIONS.forEach(primary => {
+        SECONDARY_OPTIONS.forEach(secondary => {
+            const group = entries.filter(e => e.primary === primary && e.secondary === secondary);
+            if (group.length === 0) return;
+            out += `    // ================== ${primary} - ${secondary} (${group.length} 種) ==================\n`;
+            group.forEach(e => {
+                let line = `    { name: ${jsStr(e.name)}, primary: ${jsStr(e.primary)}, secondary: ${jsStr(e.secondary)}, nature: ${jsStr(e.nature)}, meridians: ${jsStr(e.meridians)}, rarity: ${jsStr(e.rarity)} },`;
+                if (e.note) line += ` /* ${e.note.replace(/\*\//g, '* /')} */`;
+                out += line + '\n';
+            });
+            out += '\n';
+        });
+    });
+
+    out = out.replace(/\n+$/, '\n');
+    out += '];\n';
+    return out;
+}
+
+// ================== 檔案操作 ==================
+async function openFile() {
+    try {
+        let text;
+        if (FS_ACCESS_SUPPORTED) {
+            [fileHandle] = await window.showOpenFilePicker({
+                types: [{ description: 'JavaScript 資料檔', accept: { 'text/javascript': ['.js'] } }],
+                excludeAcceptAllOption: false
+            });
+            const file = await fileHandle.getFile();
+            text = await file.text();
+        } else {
+            text = await new Promise((resolve, reject) => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.js';
+                input.onchange = () => {
+                    if (!input.files[0]) return reject(new Error('cancelled'));
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsText(input.files[0]);
+                };
+                input.click();
+            });
+        }
+
+        loadFromSource(text);
+        document.getElementById('reloadBtn').disabled = false;
+        document.getElementById('addBtn').disabled = false;
+        document.getElementById('backupBtn').disabled = false;
+        document.getElementById('filtersBar').style.display = 'flex';
+        showToast('✅ 檔案載入成功');
+    } catch (e) {
+        if (e.message !== 'cancelled' && e.name !== 'AbortError') {
+            console.error(e);
+            showToast('❌ 載入失敗：' + e.message, 'error');
+        }
+    }
+}
+
+function loadFromSource(text) {
+    originalSource = text;
+    const parsed = parseMedDataSource(text);
+    entriesMap = new Map(parsed.map(e => [e._uid, e]));
+    populateFilterOptions();
+    renderTable();
+    markDirty(false);
+}
+
+function reloadFile() {
+    if (!originalSource) return;
+    if (isDirty && !confirm('⚠️ 確定要捨棄所有尚未儲存的變更，重新載入原始內容嗎？')) return;
+    loadFromSource(originalSource);
+    showToast('已還原為上次開啟時的內容');
+}
+
+function populateFilterOptions() {
+    const fp = document.getElementById('filterPrimary');
+    const fs = document.getElementById('filterSecondary');
+    const fr = document.getElementById('filterRarity');
+    fp.innerHTML = '<option value="">全部大類</option>' + PRIMARY_OPTIONS.map(p => `<option value="${p}">${p}</option>`).join('');
+    fs.innerHTML = '<option value="">全部分類</option>' + SECONDARY_OPTIONS.map(s => `<option value="${s}">${s}</option>`).join('');
+    fr.innerHTML = '<option value="">全部稀有度</option>' + RARITY_OPTIONS.map(r => `<option value="${r}">${r}</option>`).join('');
+}
+
+function clearFilters() {
+    document.getElementById('searchBox').value = '';
+    document.getElementById('filterPrimary').value = '';
+    document.getElementById('filterSecondary').value = '';
+    document.getElementById('filterRarity').value = '';
+    renderTable();
+}
+
+function getDuplicateNameSet() {
+    const counts = new Map();
+    entriesMap.forEach(e => {
+        const n = (e.name || '').trim();
+        if (!n) return;
+        counts.set(n, (counts.get(n) || 0) + 1);
+    });
+    return new Set([...counts.entries()].filter(([, c]) => c > 1).map(([n]) => n));
+}
+
+function addNewEntry() {
+    const uid = nextUid++;
+    const entry = { _uid: uid, name: "", primary: PRIMARY_OPTIONS[0], secondary: SECONDARY_OPTIONS[0], nature: "", meridians: "", rarity: RARITY_OPTIONS[0], note: "" };
+    // 新項目放最前面，方便立即看到並填寫
+    const newMap = new Map([[uid, entry], ...entriesMap]);
+    entriesMap = newMap;
+    markDirty(true);
+    renderTable();
+    const el = document.querySelector(`tr[data-uid="${uid}"] input.f-name`);
+    if (el) el.focus();
+}
+
+function deleteEntry(uid) {
+    const e = entriesMap.get(uid);
+    if (!e) return;
+    if (!confirm(`確定要刪除「${e.name || '(未命名)'}」嗎？`)) return;
+    entriesMap.delete(uid);
+    markDirty(true);
+    renderTable();
+}
+
+function updateEntryField(uid, field, value) {
+    const e = entriesMap.get(uid);
+    if (!e) return;
+    e[field] = value;
+    markDirty(true);
+    if (field === 'name') {
+        // 僅刷新重複名稱標記，不整表重繪，避免輸入中斷焦點
+        refreshDuplicateHighlight();
+    }
+    if (field === 'primary' || field === 'secondary' || field === 'rarity') {
+        renderTable();
+    }
+}
+
+function refreshDuplicateHighlight() {
+    const dupSet = getDuplicateNameSet();
+    document.querySelectorAll('#tableWrap tbody tr').forEach(tr => {
+        const uid = Number(tr.dataset.uid);
+        const e = entriesMap.get(uid);
+        if (!e) return;
+        tr.classList.toggle('dup-row', dupSet.has((e.name || '').trim()) && e.name.trim() !== '');
+    });
+    updateSummary(dupSet);
+}
+
+function updateSummary(dupSet) {
+    dupSet = dupSet || getDuplicateNameSet();
+    const total = entriesMap.size;
+    const byRarity = {};
+    RARITY_OPTIONS.forEach(r => byRarity[r] = 0);
+    entriesMap.forEach(e => { if (byRarity[e.rarity] !== undefined) byRarity[e.rarity]++; });
+    const rarityText = RARITY_OPTIONS.map(r => `${r}:${byRarity[r]}`).join(' / ');
+    let html = `共 <b>${total}</b> 筆　|　稀有度分布　${rarityText}`;
+    if (dupSet.size > 0) {
+        html += `　|　<span class="warn-text">⚠️ 重複名稱 ${dupSet.size} 組：${[...dupSet].join('、')}</span>`;
+    }
+    document.getElementById('summaryBar').innerHTML = html;
+}
+
+function renderTable() {
+    const wrap = document.getElementById('tableWrap');
+    if (entriesMap.size === 0) {
+        wrap.innerHTML = `<div class="empty-state"><div class="big">📭</div>尚未載入資料，請先開啟 medData.js 檔案。</div>`;
+        document.getElementById('summaryBar').innerHTML = '';
+        return;
+    }
+
+    const keyword = document.getElementById('searchBox').value.trim();
+    const fPrimary = document.getElementById('filterPrimary').value;
+    const fSecondary = document.getElementById('filterSecondary').value;
+    const fRarity = document.getElementById('filterRarity').value;
+    const dupSet = getDuplicateNameSet();
+
+    let list = [...entriesMap.values()];
+    if (fPrimary) list = list.filter(e => e.primary === fPrimary);
+    if (fSecondary) list = list.filter(e => e.secondary === fSecondary);
+    if (fRarity) list = list.filter(e => e.rarity === fRarity);
+    if (keyword) list = list.filter(e => e.name.includes(keyword) || e.nature.includes(keyword) || e.meridians.includes(keyword));
+
+    let html = `<table><thead><tr>
+        <th class="col-name">名稱</th><th class="col-primary">大類</th><th class="col-secondary">分類</th>
+        <th class="col-nature">性味</th><th class="col-meridians">歸經</th><th class="col-rarity">稀有度</th>
+        <th class="col-note">備註 (選填)</th><th class="col-actions"></th>
+    </tr></thead><tbody>`;
+
+    list.forEach(e => {
+        const isDup = dupSet.has(e.name.trim()) && e.name.trim() !== '';
+        const invalid = !e.name.trim() || !e.nature.trim() || !e.meridians.trim();
+        html += `<tr data-uid="${e._uid}" class="${isDup ? 'dup-row' : ''} ${invalid ? 'invalid-row' : ''}">
+            <td class="name-cell"><input class="f-name" type="text" value="${escapeAttr(e.name)}" oninput="updateEntryField(${e._uid},'name',this.value)"></td>
+            <td>${selectHTML(e._uid, 'primary', PRIMARY_OPTIONS, e.primary)}</td>
+            <td>${selectHTML(e._uid, 'secondary', SECONDARY_OPTIONS, e.secondary)}</td>
+            <td><input type="text" value="${escapeAttr(e.nature)}" oninput="updateEntryField(${e._uid},'nature',this.value)"></td>
+            <td><input type="text" value="${escapeAttr(e.meridians)}" oninput="updateEntryField(${e._uid},'meridians',this.value)"></td>
+            <td>${selectHTML(e._uid, 'rarity', RARITY_OPTIONS, e.rarity)}</td>
+            <td><input type="text" value="${escapeAttr(e.note)}" oninput="updateEntryField(${e._uid},'note',this.value)"></td>
+            <td class="col-actions"><button class="del-btn" title="刪除" onclick="deleteEntry(${e._uid})">🗑️</button></td>
+        </tr>`;
+    });
+
+    html += `</tbody></table>`;
+    if (list.length === 0) {
+        html = `<div class="empty-state">沒有符合篩選條件的藥材。</div>`;
+    }
+    wrap.innerHTML = html;
+    updateSummary(dupSet);
+}
+
+function selectHTML(uid, field, options, current) {
+    return `<select onchange="updateEntryField(${uid},'${field}',this.value)">` +
+        options.map(o => `<option value="${o}" ${o === current ? 'selected' : ''}>${o}</option>`).join('') +
+        `</select>`;
+}
+
+function escapeAttr(s) {
+    return String(s == null ? "" : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
+// ================== 驗證與儲存 ==================
+function validateAll() {
+    const problems = [];
+    entriesMap.forEach(e => {
+        const label = e.name.trim() || '(未命名項目)';
+        if (!e.name.trim()) problems.push(`${label}：名稱為必填`);
+        if (!e.nature.trim()) problems.push(`${label}：性味為必填`);
+        if (!e.meridians.trim()) problems.push(`${label}：歸經為必填`);
+    });
+    return problems;
+}
+
+async function saveFile() {
+    if (entriesMap.size === 0) return;
+    const problems = validateAll();
+    if (problems.length > 0) {
+        alert('⚠️ 以下項目尚未填寫完整，請修正後再儲存：\n\n' + problems.slice(0, 20).join('\n') + (problems.length > 20 ? `\n...等共 ${problems.length} 項` : ''));
+        return;
+    }
+    const dupSet = getDuplicateNameSet();
+    if (dupSet.size > 0) {
+        const proceed = confirm(`⚠️ 發現 ${dupSet.size} 組重複名稱的藥材：\n${[...dupSet].join('、')}\n\n這會讓圖鑑進度與抽卡結果出現混淆。仍要繼續儲存嗎？`);
+        if (!proceed) return;
+    }
+
+    const content = serializeMedData([...entriesMap.values()]);
+
+    try {
+        if (FS_ACCESS_SUPPORTED && fileHandle) {
+            const writable = await fileHandle.createWritable();
+            await writable.write(content);
+            await writable.close();
+            originalSource = content;
+            markDirty(false);
+            showToast('✅ 已直接寫入 medData.js，請到 GitHub Desktop 檢查差異並 commit / push。');
+        } else {
+            triggerDownload(content);
+            originalSource = content;
+            markDirty(false);
+            showToast('✅ 已下載新的 medData.js，請手動覆蓋原檔案後再用 GitHub Desktop commit。');
+        }
+    } catch (e) {
+        console.error(e);
+        showToast('❌ 儲存失敗：' + e.message, 'error');
+    }
+}
+
+function downloadBackup() {
+    if (entriesMap.size === 0) return;
+    triggerDownload(serializeMedData([...entriesMap.values()]));
+    showToast('已下載目前內容的備份');
+}
+
+function triggerDownload(content) {
+    const blob = new Blob([content], { type: 'text/javascript' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'medData.js';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+}
+
+window.addEventListener('beforeunload', (e) => {
+    if (isDirty) { e.preventDefault(); e.returnValue = ''; }
+});
+</script>
+</body>
+</html>

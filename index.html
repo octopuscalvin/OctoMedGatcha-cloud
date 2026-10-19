@@ -238,6 +238,7 @@
             <button class="reset-btn" onclick="resetGachaSave()">🔄 刪檔重刷</button>
             <button class="admin-btn" id="adminToggleBtn" onclick="toggleAdminMode()">🔐 管理員功能</button>
             <button class="update-btn" onclick="forceUpdateApp()">📥 檢查更新</button>
+            <button class="update-btn" onclick="window.open('admin.html', '_blank')">🗂️ 資料庫管理後台</button>
         </div>
     </div>
 
@@ -506,7 +507,9 @@
 
         function updateProgress() {
             if (typeof medData === 'undefined') return;
-            document.getElementById('collection-progress').innerText = `📖 圖鑑收集進度: ${unlockedMeds.length} / ${medData.length} 種`;
+            // 以「不重複名稱」計算總數，避免同一藥材因跨類別重複登記而讓進度永遠無法達到 100%
+            const totalUnique = new Set(medData.map(m => m.name)).size;
+            document.getElementById('collection-progress').innerText = `📖 圖鑑收集進度: ${unlockedMeds.length} / ${totalUnique} 種`;
         }
 
         const originalOnload = window.onload;
