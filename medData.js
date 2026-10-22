@@ -1,9 +1,9 @@
 // medData.js
 // 本草綱目 藥性抽卡系統 資料庫
-// 由管理後台自動產生，請勿手動調整格式 (最後更新: 2026-10-19 15:00)
+// 由管理後台自動產生，請勿手動調整格式 (最後更新: 2026-10-22 17:43)
 
 const medData = [
-    // ================== 植物藥 - 濕熱 (59 種) ==================
+    // ================== 植物藥 - 濕熱 (61 種) ==================
     { name: "大棗", primary: "植物藥", secondary: "濕熱", nature: "甘，溫", meridians: "脾、胃", rarity: "N" },
     { name: "龍眼肉", primary: "植物藥", secondary: "濕熱", nature: "甘，溫", meridians: "心、脾", rarity: "N" },
     { name: "當歸", primary: "植物藥", secondary: "濕熱", nature: "甘、辛，溫", meridians: "肝、心、脾", rarity: "R" },
@@ -63,8 +63,10 @@ const medData = [
     { name: "野生千年人參王", primary: "植物藥", secondary: "濕熱", nature: "甘、微苦，微溫", meridians: "脾、肺、心", rarity: "UR" },
     { name: "天然西藏冬蟲夏草", primary: "植物藥", secondary: "濕熱", nature: "甘，溫", meridians: "肺、腎", rarity: "UR" },
     { name: "百年野生何首烏精", primary: "植物藥", secondary: "濕熱", nature: "苦、甘、澀，微溫", meridians: "肝、心、腎", rarity: "SSR" },
+    { name: "山茱萸", primary: "植物藥", secondary: "濕熱", nature: "酸、澀，微溫", meridians: "肝、腎", rarity: "R" },
+    { name: "補骨脂", primary: "植物藥", secondary: "濕熱", nature: "辛、苦，溫", meridians: "腎、脾", rarity: "R" },
 
-    // ================== 植物藥 - 乾熱 (72 種) ==================
+    // ================== 植物藥 - 乾熱 (85 種) ==================
     { name: "生薑", primary: "植物藥", secondary: "乾熱", nature: "辛，微溫", meridians: "肺、脾、胃", rarity: "N" },
     { name: "蔥白", primary: "植物藥", secondary: "乾熱", nature: "辛，溫", meridians: "肺、胃", rarity: "N" },
     { name: "花椒", primary: "植物藥", secondary: "乾熱", nature: "辛，溫", meridians: "脾、胃、腎", rarity: "N" },
@@ -114,7 +116,6 @@ const medData = [
     { name: "徐長卿", primary: "植物藥", secondary: "乾熱", nature: "辛，溫", meridians: "肝、胃", rarity: "R" },
     { name: "乳香", primary: "植物藥", secondary: "乾熱", nature: "辛、苦，溫", meridians: "心、肝、脾", rarity: "SR" },
     { name: "沒藥", primary: "植物藥", secondary: "乾熱", nature: "苦，平偏溫", meridians: "心、肝、脾", rarity: "SR" },
-    { name: "自然銅", primary: "植物藥", secondary: "乾熱", nature: "辛，平偏溫", meridians: "肝", rarity: "N" }, /* 註：雖為礦物，但在傷科常與乾熱藥同列，此處借放 */
     { name: "骨碎補", primary: "植物藥", secondary: "乾熱", nature: "苦，溫", meridians: "肝、腎", rarity: "R" }, /* 亦可入濕熱補益，但其燥性亦強 */
     { name: "蘇木", primary: "植物藥", secondary: "乾熱", nature: "甘、鹹、辛，平偏溫", meridians: "心、肝、脾", rarity: "R" },
     { name: "川牛膝", primary: "植物藥", secondary: "乾熱", nature: "甘、微苦，平偏溫", meridians: "肝、腎", rarity: "R" },
@@ -137,8 +138,22 @@ const medData = [
     { name: "蛇床子", primary: "植物藥", secondary: "乾熱", nature: "辛、苦，溫，有小毒", meridians: "腎", rarity: "R" },
     { name: "野生雪上一枝蒿", primary: "植物藥", secondary: "乾熱", nature: "苦、辛，大熱，有大毒", meridians: "肝、腎", rarity: "UR" },
     { name: "高黎貢山野生血竭", primary: "植物藥", secondary: "乾熱", nature: "甘、鹹，平偏溫", meridians: "心、肝", rarity: "SSR" },
+    { name: "沉香", primary: "植物藥", secondary: "乾熱", nature: "辛、苦，溫", meridians: "脾、胃、腎", rarity: "SSR" },
+    { name: "檀香", primary: "植物藥", secondary: "乾熱", nature: "辛，溫", meridians: "脾、胃、肺", rarity: "SR" },
+    { name: "薤白", primary: "植物藥", secondary: "乾熱", nature: "辛、苦，溫", meridians: "心、肺、胃、大腸", rarity: "N" },
+    { name: "青皮", primary: "植物藥", secondary: "乾熱", nature: "苦、辛，溫", meridians: "肝、膽、胃", rarity: "N" },
+    { name: "薑黃", primary: "植物藥", secondary: "乾熱", nature: "辛、苦，溫", meridians: "肝、脾", rarity: "R" },
+    { name: "馬錢子", primary: "植物藥", secondary: "乾熱", nature: "苦，溫，有大毒", meridians: "肝、脾", rarity: "SR" },
+    { name: "皂角刺", primary: "植物藥", secondary: "乾熱", nature: "辛，溫", meridians: "肝、胃", rarity: "N" },
+    { name: "芫花", primary: "植物藥", secondary: "乾熱", nature: "苦、辛，溫，有毒", meridians: "肺、脾、腎", rarity: "SR" },
+    { name: "巴豆", primary: "植物藥", secondary: "乾熱", nature: "辛，熱，有大毒", meridians: "胃、大腸", rarity: "SR" },
+    { name: "石菖蒲", primary: "植物藥", secondary: "乾熱", nature: "辛、苦，溫", meridians: "心、胃", rarity: "N" },
+    { name: "穿山龍", primary: "植物藥", secondary: "乾熱", nature: "甘、苦，溫", meridians: "肝、腎、肺", rarity: "N" },
+    { name: "伸筋草", primary: "植物藥", secondary: "乾熱", nature: "微苦、辛，溫", meridians: "肝、脾、腎", rarity: "N" },
+    { name: "千年健", primary: "植物藥", secondary: "乾熱", nature: "苦、辛，溫", meridians: "肝、腎", rarity: "N" },
+    { name: "劉寄奴", primary: "植物藥", secondary: "乾熱", nature: "苦，溫", meridians: "心、肝、脾", rarity: "N" },
 
-    // ================== 植物藥 - 中性 (63 種) ==================
+    // ================== 植物藥 - 中性 (72 種) ==================
     { name: "甘草", primary: "植物藥", secondary: "中性", nature: "甘，平", meridians: "心、肺、脾、胃", rarity: "N" },
     { name: "茯苓", primary: "植物藥", secondary: "中性", nature: "甘、淡，平", meridians: "心、肺、脾、腎", rarity: "N" },
     { name: "豬苓", primary: "植物藥", secondary: "中性", nature: "甘、淡，平", meridians: "腎、膀胱", rarity: "N" },
@@ -202,8 +217,17 @@ const medData = [
     { name: "長白山野生靈芝", primary: "植物藥", secondary: "中性", nature: "甘，平", meridians: "心、肺、肝、腎", rarity: "UR" },
     { name: "藏紅花 (頂級番紅花)", primary: "植物藥", secondary: "中性", nature: "甘，平", meridians: "心、肝", rarity: "SSR" },
     { name: "天然生血琥珀", primary: "植物藥", secondary: "中性", nature: "甘，平", meridians: "心、肝、小腸", rarity: "SSR" },
+    { name: "金櫻子", primary: "植物藥", secondary: "中性", nature: "酸、澀，平", meridians: "腎、膀胱、大腸", rarity: "R" },
+    { name: "火麻仁", primary: "植物藥", secondary: "中性", nature: "甘，平", meridians: "脾、胃、大腸", rarity: "N" },
+    { name: "郁李仁", primary: "植物藥", secondary: "中性", nature: "辛、苦、甘，平", meridians: "脾、大腸、小腸", rarity: "N" },
+    { name: "玉米鬚", primary: "植物藥", secondary: "中性", nature: "甘，平", meridians: "腎、胃、肝、膽", rarity: "N" },
+    { name: "萆薢", primary: "植物藥", secondary: "中性", nature: "苦，平", meridians: "腎、胃", rarity: "R" },
+    { name: "麻黃根", primary: "植物藥", secondary: "中性", nature: "甘、澀，平", meridians: "肺", rarity: "N" },
+    { name: "琥珀", primary: "植物藥", secondary: "中性", nature: "甘，平", meridians: "心、肝、膀胱", rarity: "SR" },
+    { name: "木賊", primary: "植物藥", secondary: "中性", nature: "甘、苦，平", meridians: "肺、肝", rarity: "N" },
+    { name: "老鸛草", primary: "植物藥", secondary: "中性", nature: "苦、辛，平", meridians: "肝、腎、脾", rarity: "N" },
 
-    // ================== 植物藥 - 濕寒 (80 種) ==================
+    // ================== 植物藥 - 濕寒 (82 種) ==================
     { name: "五加皮", primary: "植物藥", secondary: "濕寒", nature: "辛、苦，溫", meridians: "肝、腎", rarity: "R" }, /* 註：部分本草視為溫燥，但其補益肝腎之功亦帶有濕熱偏向 */
     { name: "麥門冬", primary: "植物藥", secondary: "濕寒", nature: "甘、微苦，微寒", meridians: "胃、肺、心", rarity: "R" },
     { name: "天門冬", primary: "植物藥", secondary: "濕寒", nature: "甘、苦，大寒", meridians: "肺、腎", rarity: "SR" },
@@ -284,8 +308,10 @@ const medData = [
     { name: "仙人掌", primary: "植物藥", secondary: "濕寒", nature: "苦，寒", meridians: "心、肺、胃", rarity: "N" },
     { name: "蘆薈", primary: "植物藥", secondary: "濕寒", nature: "苦，大寒", meridians: "肝、胃、大腸", rarity: "R" },
     { name: "豆腐", primary: "植物藥", secondary: "濕寒", nature: "甘，涼", meridians: "脾、胃、大腸", rarity: "N" },
+    { name: "浮小麥", primary: "植物藥", secondary: "濕寒", nature: "甘，涼", meridians: "心", rarity: "N" },
+    { name: "西洋參", primary: "植物藥", secondary: "濕寒", nature: "甘、微苦，涼", meridians: "心、肺、腎", rarity: "SR" },
 
-    // ================== 植物藥 - 乾寒 (74 種) ==================
+    // ================== 植物藥 - 乾寒 (89 種) ==================
     { name: "黃連", primary: "植物藥", secondary: "乾寒", nature: "苦，寒", meridians: "心、脾、胃、肝、膽、大腸", rarity: "R" },
     { name: "黃芩", primary: "植物藥", secondary: "乾寒", nature: "苦，寒", meridians: "肺、膽、脾、大腸、小腸", rarity: "R" },
     { name: "黃柏", primary: "植物藥", secondary: "乾寒", nature: "苦，寒", meridians: "腎、膀胱", rarity: "R" },
@@ -300,7 +326,6 @@ const medData = [
     { name: "板藍根", primary: "植物藥", secondary: "乾寒", nature: "苦，寒", meridians: "心、胃", rarity: "R" },
     { name: "大青葉", primary: "植物藥", secondary: "乾寒", nature: "苦，大寒", meridians: "心、胃", rarity: "R" },
     { name: "青黛", primary: "植物藥", secondary: "乾寒", nature: "鹹，寒", meridians: "肝、肺、胃", rarity: "R" },
-    { name: "石膏", primary: "植物藥", secondary: "乾寒", nature: "辛、甘，大寒", meridians: "肺、胃", rarity: "R" },
     { name: "知母", primary: "植物藥", secondary: "乾寒", nature: "苦、甘，寒", meridians: "肺、胃、腎", rarity: "R" },
     { name: "梔子", primary: "植物藥", secondary: "乾寒", nature: "苦，寒", meridians: "心、肺、三焦", rarity: "R" },
     { name: "夏枯草", primary: "植物藥", secondary: "乾寒", nature: "苦、辛，寒", meridians: "肝、膽", rarity: "R" },
@@ -360,6 +385,22 @@ const medData = [
     { name: "菊花腦", primary: "植物藥", secondary: "乾寒", nature: "苦、辛，涼", meridians: "肺、肝", rarity: "N" },
     { name: "馬蘭", primary: "植物藥", secondary: "乾寒", nature: "辛，平偏涼", meridians: "肺、肝、胃", rarity: "N" },
     { name: "冬葵子", primary: "植物藥", secondary: "乾寒", nature: "甘，寒", meridians: "大腸、小腸、膀胱", rarity: "R" },
+    { name: "大黃", primary: "植物藥", secondary: "乾寒", nature: "苦，寒", meridians: "脾、胃、大腸、肝、心包", rarity: "R" },
+    { name: "澤瀉", primary: "植物藥", secondary: "乾寒", nature: "甘、淡，寒", meridians: "腎、膀胱", rarity: "N" },
+    { name: "川楝子", primary: "植物藥", secondary: "乾寒", nature: "苦，寒，有小毒", meridians: "肝、小腸、膀胱", rarity: "R" },
+    { name: "番瀉葉", primary: "植物藥", secondary: "乾寒", nature: "甘、苦，寒", meridians: "大腸", rarity: "N" },
+    { name: "甘遂", primary: "植物藥", secondary: "乾寒", nature: "苦，寒，有毒", meridians: "肺、腎、大腸", rarity: "SR" },
+    { name: "京大戟", primary: "植物藥", secondary: "乾寒", nature: "苦，寒，有毒", meridians: "肺、脾、腎", rarity: "SR" },
+    { name: "牽牛子", primary: "植物藥", secondary: "乾寒", nature: "苦，寒，有毒", meridians: "肺、腎、大腸", rarity: "R" },
+    { name: "冬瓜皮", primary: "植物藥", secondary: "乾寒", nature: "甘，涼", meridians: "脾、小腸", rarity: "N" },
+    { name: "地膚子", primary: "植物藥", secondary: "乾寒", nature: "辛、苦，寒", meridians: "腎、膀胱", rarity: "N" },
+    { name: "海金沙", primary: "植物藥", secondary: "乾寒", nature: "甘、鹹，寒", meridians: "膀胱、小腸", rarity: "R" },
+    { name: "車前子", primary: "植物藥", secondary: "乾寒", nature: "甘，寒", meridians: "腎、肝、肺、小腸", rarity: "N" },
+    { name: "雞骨草", primary: "植物藥", secondary: "乾寒", nature: "甘、微苦，涼", meridians: "肝、胃", rarity: "N" },
+    { name: "冰片", primary: "植物藥", secondary: "乾寒", nature: "辛、苦，微寒", meridians: "心、脾、肺", rarity: "R" },
+    { name: "淡竹葉", primary: "植物藥", secondary: "乾寒", nature: "甘、淡，寒", meridians: "心、胃、小腸", rarity: "N" },
+    { name: "淡豆豉", primary: "植物藥", secondary: "乾寒", nature: "苦、辛，涼", meridians: "肺、胃", rarity: "N" },
+    { name: "雷公藤", primary: "植物藥", secondary: "乾寒", nature: "苦、辛，涼，有大毒", meridians: "肝、腎", rarity: "SR" },
 
     // ================== 動物藥 - 濕熱 (45 種) ==================
     { name: "紫河車 (胎盤)", primary: "動物藥", secondary: "濕熱", nature: "甘、鹹，溫", meridians: "心、肺、腎", rarity: "SSR" }, /* 註：此處以中藥材歸類，實際上紫河車為人類胎盤，傳統上歸於人部 */
@@ -408,7 +449,7 @@ const medData = [
     { name: "正宗廣東阿膠珠", primary: "動物藥", secondary: "濕熱", nature: "甘，平偏溫", meridians: "肺、肝、腎", rarity: "SSR" },
     { name: "天然海狗腎", primary: "動物藥", secondary: "濕熱", nature: "鹹，大熱", meridians: "肝、腎", rarity: "UR" },
 
-    // ================== 動物藥 - 乾熱 (27 種) ==================
+    // ================== 動物藥 - 乾熱 (28 種) ==================
     { name: "五靈脂", primary: "動物藥", secondary: "乾熱", nature: "苦、甘，溫", meridians: "肝", rarity: "R" }, /* 註：為動物排泄物，因活血散寒常與植物藥同列 */
     { name: "全蠍", primary: "動物藥", secondary: "乾熱", nature: "辛，平偏溫，有毒", meridians: "肝", rarity: "R" },
     { name: "蜈蚣", primary: "動物藥", secondary: "乾熱", nature: "辛，溫，有毒", meridians: "肝", rarity: "R" },
@@ -436,8 +477,9 @@ const medData = [
     { name: "狗寶", primary: "動物藥", secondary: "乾熱", nature: "甘、鹹，平偏溫", meridians: "肝、胃", rarity: "SR" },
     { name: "貓肉", primary: "動物藥", secondary: "乾熱", nature: "甘、酸，溫", meridians: "肝、脾", rarity: "N" },
     { name: "天然野生麝香", primary: "動物藥", secondary: "乾熱", nature: "辛，溫", meridians: "心、脾、肝", rarity: "UR" },
+    { name: "麝香", primary: "動物藥", secondary: "乾熱", nature: "辛，溫", meridians: "心、脾", rarity: "SSR" },
 
-    // ================== 動物藥 - 中性 (26 種) ==================
+    // ================== 動物藥 - 中性 (27 種) ==================
     { name: "蜂蜜", primary: "動物藥", secondary: "中性", nature: "甘，平", meridians: "肺、脾、大腸", rarity: "N" },
     { name: "蜂蠟", primary: "動物藥", secondary: "中性", nature: "甘，平", meridians: "脾、胃", rarity: "N" },
     { name: "燕窩", primary: "動物藥", secondary: "中性", nature: "甘，平", meridians: "肺、胃、腎", rarity: "SSR" },
@@ -464,8 +506,9 @@ const medData = [
     { name: "龜肉", primary: "動物藥", secondary: "中性", nature: "甘、鹹，平", meridians: "肝、腎、大腸", rarity: "R" },
     { name: "鱉肉 (甲魚肉)", primary: "動物藥", secondary: "中性", nature: "甘，平", meridians: "肝、脾", rarity: "R" },
     { name: "上品金絲燕窩", primary: "動物藥", secondary: "中性", nature: "甘，平", meridians: "肺、胃、腎", rarity: "SSR" },
+    { name: "水蛭", primary: "動物藥", secondary: "中性", nature: "鹹、苦，平，有小毒", meridians: "肝", rarity: "R" },
 
-    // ================== 動物藥 - 濕寒 (20 種) ==================
+    // ================== 動物藥 - 濕寒 (19 種) ==================
     { name: "龜甲 (龜板)", primary: "動物藥", secondary: "濕寒", nature: "鹹、甘，寒", meridians: "肝、腎、心", rarity: "SR" },
     { name: "鱉甲", primary: "動物藥", secondary: "濕寒", nature: "鹹，寒", meridians: "肝、腎", rarity: "SR" },
     { name: "牡蠣 (生蠔殼)", primary: "動物藥", secondary: "濕寒", nature: "鹹，微寒", meridians: "肝、膽、腎", rarity: "N" },
@@ -474,7 +517,6 @@ const medData = [
     { name: "珍珠母", primary: "動物藥", secondary: "濕寒", nature: "鹹，寒", meridians: "肝、心", rarity: "N" },
     { name: "玳瑁", primary: "動物藥", secondary: "濕寒", nature: "甘、鹹，寒", meridians: "心、肝", rarity: "SSR" },
     { name: "海蛤殼", primary: "動物藥", secondary: "濕寒", nature: "苦、鹹，寒", meridians: "肺、胃", rarity: "N" },
-    { name: "浮海石", primary: "動物藥", secondary: "濕寒", nature: "鹹，寒", meridians: "肺", rarity: "N" },
     { name: "螃蟹", primary: "動物藥", secondary: "濕寒", nature: "鹹，寒", meridians: "肝、胃", rarity: "N" },
     { name: "蜆肉", primary: "動物藥", secondary: "濕寒", nature: "甘、鹹，寒", meridians: "肝、胃、大腸", rarity: "N" },
     { name: "蚌肉", primary: "動物藥", secondary: "濕寒", nature: "甘、鹹，寒", meridians: "肝、腎", rarity: "N" },
@@ -487,7 +529,7 @@ const medData = [
     { name: "馬肉", primary: "動物藥", secondary: "濕寒", nature: "辛、苦，冷", meridians: "肝、脾", rarity: "N" },
     { name: "豬髓", primary: "動物藥", secondary: "濕寒", nature: "甘，寒", meridians: "腎、腦", rarity: "R" },
 
-    // ================== 動物藥 - 乾寒 (24 種) ==================
+    // ================== 動物藥 - 乾寒 (26 種) ==================
     { name: "天然牛黃", primary: "動物藥", secondary: "乾寒", nature: "苦，涼", meridians: "心、肝", rarity: "UR" },
     { name: "人工牛黃", primary: "動物藥", secondary: "乾寒", nature: "苦，涼", meridians: "心、肝", rarity: "R" },
     { name: "羚羊角", primary: "動物藥", secondary: "乾寒", nature: "鹹，寒", meridians: "肝、心", rarity: "SSR" },
@@ -512,4 +554,58 @@ const medData = [
     { name: "極品天然犀角 (歷史記載)", primary: "動物藥", secondary: "乾寒", nature: "苦、酸、鹹，寒", meridians: "心、肝、胃", rarity: "UR" },
     { name: "黑市極品熊膽粉", primary: "動物藥", secondary: "乾寒", nature: "苦，寒", meridians: "肝、膽、心", rarity: "UR" },
     { name: "正品野生羚羊角", primary: "動物藥", secondary: "乾寒", nature: "鹹，寒", meridians: "肝、心", rarity: "SSR" },
+    { name: "虻蟲", primary: "動物藥", secondary: "乾寒", nature: "苦，微寒，有小毒", meridians: "肝", rarity: "R" },
+    { name: "土鱉蟲 (蟅蟲)", primary: "動物藥", secondary: "乾寒", nature: "鹹，寒，有小毒", meridians: "肝", rarity: "R" },
+
+    // ================== 金石藥 - 濕熱 (8 種) ==================
+    { name: "赤石脂", primary: "金石藥", secondary: "濕熱", nature: "甘、澀、酸，溫", meridians: "大腸、胃", rarity: "R" },
+    { name: "硫磺", primary: "金石藥", secondary: "濕熱", nature: "酸，溫，有毒", meridians: "腎、大腸", rarity: "R" },
+    { name: "鐘乳石 (石鐘乳)", primary: "金石藥", secondary: "濕熱", nature: "甘，溫", meridians: "肺、腎、胃", rarity: "SR" },
+    { name: "紫石英", primary: "金石藥", secondary: "濕熱", nature: "甘，溫", meridians: "心、肺、腎", rarity: "SR" },
+    { name: "伏龍肝", primary: "金石藥", secondary: "濕熱", nature: "辛，溫", meridians: "脾、胃", rarity: "N" },
+    { name: "雲母", primary: "金石藥", secondary: "濕熱", nature: "甘，溫", meridians: "肺、脾、腎", rarity: "SR" },
+    { name: "陽起石", primary: "金石藥", secondary: "濕熱", nature: "鹹，溫", meridians: "腎", rarity: "SR" },
+    { name: "鵝管石", primary: "金石藥", secondary: "濕熱", nature: "甘，溫", meridians: "肺、腎", rarity: "SR" },
+
+    // ================== 金石藥 - 乾熱 (4 種) ==================
+    { name: "自然銅", primary: "金石藥", secondary: "乾熱", nature: "辛，平偏溫", meridians: "肝", rarity: "N" },
+    { name: "雄黃", primary: "金石藥", secondary: "乾熱", nature: "辛，溫，有毒", meridians: "肝、大腸", rarity: "SR" },
+    { name: "砒霜 (信石)", primary: "金石藥", secondary: "乾熱", nature: "辛，大熱，大毒", meridians: "肺、肝", rarity: "SR" },
+    { name: "生石灰", primary: "金石藥", secondary: "乾熱", nature: "辛，溫，有毒", meridians: "肝、脾", rarity: "N" },
+
+    // ================== 金石藥 - 中性 (12 種) ==================
+    { name: "爐甘石", primary: "金石藥", secondary: "中性", nature: "甘，平", meridians: "肝、脾", rarity: "N" },
+    { name: "禹餘糧", primary: "金石藥", secondary: "中性", nature: "甘、澀，平", meridians: "胃、大腸", rarity: "R" },
+    { name: "密陀僧", primary: "金石藥", secondary: "中性", nature: "鹹、辛，平，有毒", meridians: "肝、脾", rarity: "R" },
+    { name: "龍骨", primary: "金石藥", secondary: "中性", nature: "甘、澀，平", meridians: "心、肝、腎", rarity: "R" },
+    { name: "花蕊石", primary: "金石藥", secondary: "中性", nature: "酸、澀，平", meridians: "肝", rarity: "R" },
+    { name: "無名異", primary: "金石藥", secondary: "中性", nature: "甘，平", meridians: "肝", rarity: "R" },
+    { name: "青礞石", primary: "金石藥", secondary: "中性", nature: "甘、鹹，平", meridians: "肺、肝", rarity: "R" },
+    { name: "金礞石", primary: "金石藥", secondary: "中性", nature: "甘、鹹，平", meridians: "肺、肝、心", rarity: "R" },
+    { name: "金箔", primary: "金石藥", secondary: "中性", nature: "辛、苦，平，有毒", meridians: "心、肝", rarity: "SSR" },
+    { name: "銀箔", primary: "金石藥", secondary: "中性", nature: "辛，平", meridians: "心、肝", rarity: "SSR" },
+    { name: "銅綠 (銅青)", primary: "金石藥", secondary: "中性", nature: "酸、澀，平，有毒", meridians: "肝、膽", rarity: "R" },
+    { name: "珊瑚", primary: "金石藥", secondary: "中性", nature: "甘，平", meridians: "肝", rarity: "SSR" },
+
+    // ================== 金石藥 - 濕寒 (6 種) ==================
+    { name: "浮海石", primary: "金石藥", secondary: "濕寒", nature: "鹹，寒", meridians: "肺", rarity: "N" },
+    { name: "硃砂 (辰砂)", primary: "金石藥", secondary: "濕寒", nature: "甘，微寒，有毒", meridians: "心", rarity: "SR" },
+    { name: "磁石", primary: "金石藥", secondary: "濕寒", nature: "鹹，寒", meridians: "肝、心、腎", rarity: "R" },
+    { name: "代赭石", primary: "金石藥", secondary: "濕寒", nature: "苦，寒", meridians: "肝、心、肺、胃", rarity: "R" },
+    { name: "龍齒", primary: "金石藥", secondary: "濕寒", nature: "澀、甘，涼", meridians: "心、肝", rarity: "R" },
+    { name: "黑錫", primary: "金石藥", secondary: "濕寒", nature: "甘，寒，有毒", meridians: "腎", rarity: "SR" },
+
+    // ================== 金石藥 - 乾寒 (12 種) ==================
+    { name: "石膏", primary: "金石藥", secondary: "乾寒", nature: "辛、甘，大寒", meridians: "肺、胃", rarity: "R" },
+    { name: "寒水石", primary: "金石藥", secondary: "乾寒", nature: "辛、鹹，寒", meridians: "心、胃、腎", rarity: "R" },
+    { name: "滑石", primary: "金石藥", secondary: "乾寒", nature: "甘、淡，寒", meridians: "膀胱、肺、胃", rarity: "N" },
+    { name: "芒硝", primary: "金石藥", secondary: "乾寒", nature: "鹹、苦，寒", meridians: "胃、大腸、三焦", rarity: "N" },
+    { name: "玄明粉", primary: "金石藥", secondary: "乾寒", nature: "鹹，寒", meridians: "胃、大腸", rarity: "N" },
+    { name: "硼砂", primary: "金石藥", secondary: "乾寒", nature: "甘、鹹，涼", meridians: "肺", rarity: "R" },
+    { name: "皂礬 (綠礬)", primary: "金石藥", secondary: "乾寒", nature: "酸、澀，涼，有毒", meridians: "肝、脾", rarity: "R" },
+    { name: "白礬 (明礬)", primary: "金石藥", secondary: "乾寒", nature: "酸、澀，寒", meridians: "肺、脾、肝、大腸", rarity: "N" },
+    { name: "膽礬", primary: "金石藥", secondary: "乾寒", nature: "酸、辛，寒，有毒", meridians: "肝、膽", rarity: "SR" },
+    { name: "鉛丹 (黃丹)", primary: "金石藥", secondary: "乾寒", nature: "辛，微寒，有毒", meridians: "心、肝", rarity: "R" },
+    { name: "輕粉", primary: "金石藥", secondary: "乾寒", nature: "辛，寒，有毒", meridians: "大腸、小腸", rarity: "SR" },
+    { name: "水銀", primary: "金石藥", secondary: "乾寒", nature: "辛，寒，有大毒", meridians: "心、肝", rarity: "UR" },
 ];

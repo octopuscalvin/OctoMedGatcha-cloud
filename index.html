@@ -42,7 +42,7 @@
         .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 20px; font-size: 0.9em; }
 
         /* ===== 2. 大類切換按鈕 ===== */
-        .filter-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; }
+        .filter-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 20px; }
         .filter-btn {
             background-color: #fff; border: 2px solid var(--accent-color);
             color: var(--text-main); padding: 8px 25px; font-size: 16px;
@@ -214,6 +214,7 @@
     <div class="filter-container">
         <button class="filter-btn active" onclick="switchCategory('植物藥')">植物藥</button>
         <button class="filter-btn" onclick="switchCategory('動物藥')">動物藥</button>
+        <button class="filter-btn" onclick="switchCategory('金石藥')">金石藥</button>
     </div>
 
     <!-- 2. 搜尋與祈願功能區 -->
