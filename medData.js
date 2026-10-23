@@ -9,7 +9,7 @@ const medData = [
     { name: "當歸", primary: "植物藥", secondary: "濕熱", nature: "甘、辛，溫", meridians: "肝、心、脾", rarity: "R" },
     { name: "熟地黃", primary: "植物藥", secondary: "濕熱", nature: "甘，微溫", meridians: "肝、腎", rarity: "R" },
     { name: "黨參", primary: "植物藥", secondary: "濕熱", nature: "甘，平偏溫", meridians: "脾、肺", rarity: "R" },
-    { name: "黃耆", primary: "植物藥", secondary: "濕熱", nature: "甘，微溫", meridians: "肺、脾", rarity: "R" },
+    { name: "黃耆 (黃芪/北芪)", primary: "植物藥", secondary: "濕熱", nature: "甘，微溫", meridians: "肺、脾", rarity: "R" },
     { name: "何首烏", primary: "植物藥", secondary: "濕熱", nature: "苦、甘、澀，微溫", meridians: "肝、心、腎", rarity: "R" },
     { name: "白朮", primary: "植物藥", secondary: "濕熱", nature: "苦、甘，溫", meridians: "脾、胃", rarity: "R" },
     { name: "杜仲", primary: "植物藥", secondary: "濕熱", nature: "甘，溫", meridians: "肝、腎", rarity: "R" },
