@@ -1,6 +1,6 @@
 // medData.js
 // 本草綱目 藥性抽卡系統 資料庫
-// 由管理後台自動產生，請勿手動調整格式 (最後更新: 2026-10-22 17:43)
+// 由管理後台自動產生，請勿手動調整格式 (最後更新: 2026-10-24 17:49)
 
 const medData = [
     // ================== 植物藥 - 濕熱 (61 種) ==================
@@ -311,7 +311,7 @@ const medData = [
     { name: "浮小麥", primary: "植物藥", secondary: "濕寒", nature: "甘，涼", meridians: "心", rarity: "N" },
     { name: "西洋參", primary: "植物藥", secondary: "濕寒", nature: "甘、微苦，涼", meridians: "心、肺、腎", rarity: "SR" },
 
-    // ================== 植物藥 - 乾寒 (89 種) ==================
+    // ================== 植物藥 - 乾寒 (91 種) ==================
     { name: "黃連", primary: "植物藥", secondary: "乾寒", nature: "苦，寒", meridians: "心、脾、胃、肝、膽、大腸", rarity: "R" },
     { name: "黃芩", primary: "植物藥", secondary: "乾寒", nature: "苦，寒", meridians: "肺、膽、脾、大腸、小腸", rarity: "R" },
     { name: "黃柏", primary: "植物藥", secondary: "乾寒", nature: "苦，寒", meridians: "腎、膀胱", rarity: "R" },
@@ -401,6 +401,8 @@ const medData = [
     { name: "淡竹葉", primary: "植物藥", secondary: "乾寒", nature: "甘、淡，寒", meridians: "心、胃、小腸", rarity: "N" },
     { name: "淡豆豉", primary: "植物藥", secondary: "乾寒", nature: "苦、辛，涼", meridians: "肺、胃", rarity: "N" },
     { name: "雷公藤", primary: "植物藥", secondary: "乾寒", nature: "苦、辛，涼，有大毒", meridians: "肝、腎", rarity: "SR" },
+    { name: "燈心草 (燈芯花)", primary: "植物藥", secondary: "乾寒", nature: "甘、淡，微寒", meridians: "心、肺、小腸", rarity: "N" },
+    { name: "竹葉卷心 (竹芯)", primary: "植物藥", secondary: "乾寒", nature: "甘、淡，寒", meridians: "心", rarity: "N" },
 
     // ================== 動物藥 - 濕熱 (45 種) ==================
     { name: "紫河車 (胎盤)", primary: "動物藥", secondary: "濕熱", nature: "甘、鹹，溫", meridians: "心、肺、腎", rarity: "SSR" }, /* 註：此處以中藥材歸類，實際上紫河車為人類胎盤，傳統上歸於人部 */
