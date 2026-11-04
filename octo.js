@@ -34,20 +34,18 @@
 #octo.blink .body img.wide{visibility:hidden}
 #octo .body:active{animation-play-state:paused;transform:scale(.94)}
 @keyframes octoFloat{0%,100%{transform:translateY(0) rotate(-1.5deg)}50%{transform:translateY(-12px) rotate(1.5deg)}}
-#octo .say{position:absolute;right:128px;bottom:52px;width:max-content;max-width:290px;min-width:120px;padding:11px 14px 11px 16px;
-  font:13px/1.55 Consolas,"Cascadia Mono","Microsoft JhengHei","Yu Gothic UI",monospace;color:#8dffc8;letter-spacing:.2px;
-  background:repeating-linear-gradient(0deg,rgba(43,217,143,.05) 0 1px,transparent 1px 3px),linear-gradient(135deg,#06291c,#03170f);
-  border:1px solid #2bd98f;box-shadow:0 0 12px rgba(43,217,143,.35),inset 0 0 14px rgba(43,217,143,.12);
-  clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);
-  text-shadow:0 0 6px rgba(43,217,143,.55);opacity:0;transform:translateY(6px) scale(.97);transform-origin:right bottom;
+#octo .say{position:absolute;right:128px;bottom:52px;width:max-content;max-width:290px;min-width:140px;padding:13px 16px 11px 18px;
+  font:15px/1.8 "DFKai-SB","BiauKai","STKaiti","KaiTi","PMingLiU",serif;color:#4a3018;letter-spacing:.5px;
+  background:radial-gradient(ellipse at 18% 15%,rgba(139,101,55,.14) 0%,transparent 42%),radial-gradient(ellipse at 85% 80%,rgba(139,101,55,.12) 0%,transparent 45%),repeating-linear-gradient(100deg,rgba(139,101,55,.06) 0 2px,transparent 2px 7px),linear-gradient(160deg,#f8ead0 0%,#eed9a8 55%,#e2c384 100%);
+  border:1px solid #a9772f;border-radius:3px 14px 3px 14px;
+  box-shadow:inset 0 0 0 1px rgba(176,52,38,.3),2px 4px 10px rgba(80,55,20,.35);
+  opacity:0;transform:translateY(6px) scale(.97);transform-origin:right bottom;
   transition:opacity .25s,transform .25s;text-align:left;white-space:normal;overflow-wrap:anywhere}
-#octo .say::before{content:var(--octo-label);display:block;font-size:10px;letter-spacing:1.5px;color:#2bd98f;opacity:.75;margin-bottom:3px}
-#octo .say::after{content:"";display:inline-block;width:7px;height:13px;margin-left:3px;vertical-align:-2px;background:#8dffc8;animation:octoCur 1s steps(1) infinite}
-#octo .tail{position:absolute;right:112px;bottom:66px;width:18px;height:2px;background:#2bd98f;box-shadow:0 0 8px #2bd98f;
+#octo .say::before{content:var(--octo-label);display:block;font-size:15px;font-weight:700;letter-spacing:1px;color:#a0302a;opacity:.9;margin-bottom:5px;padding-bottom:4px;border-bottom:1px dashed rgba(160,48,42,.35)}
+#octo .tail{position:absolute;right:112px;bottom:66px;width:18px;height:2px;background:#a9772f;
   opacity:0;transition:opacity .25s;transform:rotate(18deg);transform-origin:right center}
 #octo.talk .say{opacity:1;transform:none}
 #octo.talk .tail{opacity:1}
-@keyframes octoCur{50%{opacity:0}}
 @media (prefers-reduced-motion:reduce){#octo .body{animation:none}}
 @media (max-width:600px){#octo .body{width:84px;height:78px}#octo .say{right:92px;bottom:36px;max-width:min(240px,calc(100vw - 130px))}#octo .tail{right:78px;bottom:48px}}`;
 
