@@ -120,6 +120,12 @@
 </div>
 
 <div id="app">
+    <div class="tabbar" style="display:flex;gap:8px;margin-bottom:14px;">
+        <button class="btn primary" id="tabEditBtn" onclick="switchTab('edit')">📋 資料庫編輯</button>
+        <button class="btn" id="tabScanBtn" onclick="switchTab('scan')">📷 藥方掃描 (OCR)</button>
+    </div>
+
+    <div id="editPanel">
     <div class="toolbar">
         <button class="btn primary" id="openBtn" onclick="openFile()">📂 開啟 medData.js</button>
         <button class="btn" id="reloadBtn" onclick="reloadFile()" disabled>↺ 捨棄變更並重新載入</button>
@@ -145,10 +151,26 @@
             尚未載入資料，請先開啟 medData.js 檔案。
         </div>
     </div>
+    </div><!-- /editPanel -->
+
+    <div id="scanPanel" style="display:none;">
+        <div class="toolbar" style="align-items:flex-start;">
+            <div class="status" style="flex-basis:100%;">
+                📷 影低或上傳藥方相片 → 自動用 OCR 讀出藥材名稱 → 對照資料庫列出性味歸經。全程喺瀏覽器本機處理，<b>相片唔會上傳到任何伺服器，辨識完成即時釋放，唔會儲存。</b>
+            </div>
+            <input type="file" id="scanFileInput" accept="image/*" capture="environment" style="display:none;" onchange="handleScanFile(this.files[0])">
+            <button class="btn primary" onclick="document.getElementById('scanFileInput').click()">📷 影相 / 選擇藥方相片</button>
+            <button class="btn danger" id="scanClearBtn" onclick="clearScan()" disabled>🗑️ 清除結果</button>
+            <span class="status" id="scanStatus"></span>
+        </div>
+        <div id="scanResultWrap"></div>
+    </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
+<script src="medData.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 const ADMIN_PASSWORD = "640480";
 const PRIMARY_OPTIONS = ["植物藥", "動物藥", "金石藥"];
@@ -533,6 +555,190 @@ function triggerDownload(content) {
 window.addEventListener('beforeunload', (e) => {
     if (isDirty) { e.preventDefault(); e.returnValue = ''; }
 });
+
+// ================== 分頁切換 ==================
+function switchTab(tab) {
+    document.getElementById('editPanel').style.display = tab === 'edit' ? 'block' : 'none';
+    document.getElementById('scanPanel').style.display = tab === 'scan' ? 'block' : 'none';
+    document.getElementById('tabEditBtn').className = 'btn' + (tab === 'edit' ? ' primary' : '');
+    document.getElementById('tabScanBtn').className = 'btn' + (tab === 'scan' ? ' primary' : '');
+}
+
+// ================== 藥方掃描 (OCR, 不使用 AI) ==================
+let scanImgObjectUrl = null;
+
+function clearScan() {
+    if (scanImgObjectUrl) { URL.revokeObjectURL(scanImgObjectUrl); scanImgObjectUrl = null; }
+    const input = document.getElementById('scanFileInput');
+    if (input) input.value = '';
+    document.getElementById('scanResultWrap').innerHTML = '';
+    document.getElementById('scanStatus').textContent = '';
+    document.getElementById('scanClearBtn').disabled = true;
+}
+
+async function handleScanFile(file) {
+    if (!file) return;
+    clearScan();
+    const statusEl = document.getElementById('scanStatus');
+    const resultWrap = document.getElementById('scanResultWrap');
+    document.getElementById('scanClearBtn').disabled = false;
+
+    scanImgObjectUrl = URL.createObjectURL(file);
+    resultWrap.innerHTML = `<div style="margin:10px 0;"><img id="scanPreviewImg" src="${scanImgObjectUrl}" style="max-width:220px;max-height:220px;border-radius:8px;border:1px solid var(--border-color);"></div>`;
+
+    if (typeof Tesseract === 'undefined') {
+        statusEl.textContent = '❌ OCR 引擎載入失敗，請檢查網絡連線後重新整理頁面。';
+        return;
+    }
+
+    try {
+        statusEl.textContent = '⏳ 準備辨識 (首次使用需下載語言包，請稍候)...';
+        const { data } = await Tesseract.recognize(file, 'chi_tra', {
+            logger: m => {
+                if (m.status && m.progress != null) {
+                    statusEl.textContent = `⏳ ${m.status} ${(m.progress * 100).toFixed(0)}%`;
+                }
+            }
+        });
+        const rawText = data.text || '';
+
+        // 相片已完成辨識，立即釋放，不會保留任何複本
+        if (scanImgObjectUrl) { URL.revokeObjectURL(scanImgObjectUrl); scanImgObjectUrl = null; }
+        const input = document.getElementById('scanFileInput');
+        if (input) input.value = '';
+        const preview = document.getElementById('scanPreviewImg');
+        if (preview) preview.remove();
+
+        renderScanResult(rawText);
+        statusEl.textContent = '✅ 辨識完成，相片已即時釋放（不會上傳或儲存）。';
+    } catch (e) {
+        console.error(e);
+        statusEl.textContent = '❌ 辨識失敗：' + e.message;
+        if (scanImgObjectUrl) { URL.revokeObjectURL(scanImgObjectUrl); scanImgObjectUrl = null; }
+    }
+}
+
+function levenshtein(a, b) {
+    const m = a.length, n = b.length;
+    if (m === 0) return n;
+    if (n === 0) return m;
+    let prev = Array.from({ length: n + 1 }, (_, j) => j);
+    for (let i = 1; i <= m; i++) {
+        const cur = [i];
+        for (let j = 1; j <= n; j++) {
+            cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+        }
+        prev = cur;
+    }
+    return prev[n];
+}
+
+function nameSimilarity(a, b) {
+    if (!a.length && !b.length) return 1;
+    return 1 - levenshtein(a, b) / Math.max(a.length, b.length);
+}
+
+function cleanOcrText(text) {
+    return text
+        .replace(/[0-9０-９]+\s*(克|公克|g|G|錢|両|兩|毫升|ml|ML)?/g, ' ')
+        .replace(/[ \t]+/g, ' ');
+}
+
+// 資料庫入面部分藥材用「主名 (別名1/別名2)」格式記錄別名，例如「黃耆 (黃芪/北芪)」，
+// 拆出每個候選名稱，確保OCR讀到任何一個別名都比對得到。
+function herbNameCandidates(entry) {
+    const raw = (entry.name || '').trim();
+    const candidates = new Set();
+    const m = raw.match(/^(.*?)\s*[\(（]([^)）]+)[\)）]\s*$/);
+    if (m) {
+        if (m[1].trim()) candidates.add(m[1].trim());
+        m[2].split(/[\/、，,]/).map(s => s.trim()).filter(Boolean).forEach(a => candidates.add(a));
+    } else if (raw) {
+        candidates.add(raw);
+    }
+    return [...candidates].filter(c => c.length >= 1);
+}
+
+// 用資料庫現有藥名(連埋別名)做「封閉詞彙」比對，唔使叫AI：先做精確子字串比對，
+// 再對剩低嘅片段做模糊(編輯距離)比對，修正OCR常見嘅錯字/漏字。
+function matchHerbsFromText(rawText) {
+    const text = cleanOcrText(rawText);
+    // OCR常見將逐隻中文字分開打空格 (例如「當 歸」)，比對精確子字串前先去晒空白。
+    const squashed = text.replace(/\s+/g, '');
+    const pairs = []; // { cand, entryName }
+    medData.forEach(e => {
+        if (!e.name || !e.name.trim()) return;
+        herbNameCandidates(e).forEach(cand => pairs.push({ cand, entryName: e.name }));
+    });
+    pairs.sort((a, b) => b.cand.length - a.cand.length);
+
+    const matched = new Map(); // entryName -> { confidence: 'exact'|'fuzzy', score?, from? }
+
+    pairs.forEach(({ cand, entryName }) => {
+        if (cand.length >= 2 && squashed.includes(cand.replace(/\s+/g, '')) && !matched.has(entryName)) {
+            matched.set(entryName, { confidence: 'exact', via: cand });
+        }
+    });
+
+    const tokens = [...new Set(
+        text.split(/[\n,，、；;。\s\/|]+/).map(t => t.trim()).filter(t => t.length >= 2)
+    )];
+    tokens.forEach(tok => {
+        if ([...matched.values()].some(info => info.via && tok.includes(info.via))) return;
+        let best = null, bestScore = 0, bestEntry = null;
+        pairs.forEach(({ cand, entryName }) => {
+            const s = nameSimilarity(tok, cand);
+            if (s > bestScore) { bestScore = s; best = cand; bestEntry = entryName; }
+        });
+        const threshold = best && best.length <= 2 ? 0.75 : 0.6;
+        if (bestEntry && bestScore >= threshold && !matched.has(bestEntry)) {
+            matched.set(bestEntry, { confidence: 'fuzzy', score: bestScore, from: tok, via: best });
+        }
+    });
+    return matched;
+}
+
+function renderScanResult(rawText) {
+    const resultWrap = document.getElementById('scanResultWrap');
+    const matched = matchHerbsFromText(rawText);
+
+    if (matched.size === 0) {
+        resultWrap.innerHTML = `<div class="empty-state">未能從相片辨識出任何已知藥材，請確保相片清晰、光線充足，藥名為印刷體較易成功。</div>
+            <details style="margin-top:10px;"><summary>查看原始 OCR 文字</summary><pre style="white-space:pre-wrap;font-size:0.8em;color:var(--text-muted);">${escapeAttr(rawText)}</pre></details>`;
+        return;
+    }
+
+    const byName = new Map(medData.map(e => [e.name, e]));
+    const rows = [...matched.entries()].map(([name, info]) => ({ entry: byName.get(name), info })).filter(r => r.entry);
+
+    const bySecondary = {};
+    SECONDARY_OPTIONS.forEach(s => bySecondary[s] = 0);
+    rows.forEach(r => { if (bySecondary[r.entry.secondary] !== undefined) bySecondary[r.entry.secondary]++; });
+    const summaryText = SECONDARY_OPTIONS.map(s => `${s}:${bySecondary[s]}`).join('　/　');
+
+    let html = `<div class="summary-bar">📜 共辨識出 <b>${rows.length}</b> 味藥材　|　寒熱分佈　${summaryText}</div>`;
+    html += `<table><thead><tr>
+        <th class="col-name">名稱</th><th class="col-primary">大類</th><th class="col-secondary">分類</th>
+        <th class="col-nature">性味</th><th class="col-meridians">歸經</th><th class="col-rarity">稀有度</th><th style="width:10%;">辨識方式</th>
+    </tr></thead><tbody>`;
+    rows.forEach(({ entry, info }) => {
+        const tag = info.confidence === 'exact'
+            ? '<span style="color:var(--ok);">精確</span>'
+            : `<span style="color:var(--warn);" title="由「${escapeAttr(info.from)}」模糊比對，相似度 ${(info.score * 100).toFixed(0)}%">模糊</span>`;
+        html += `<tr>
+            <td class="name-cell">${escapeAttr(entry.name)}</td>
+            <td>${escapeAttr(entry.primary)}</td>
+            <td>${escapeAttr(entry.secondary)}</td>
+            <td>${escapeAttr(entry.nature)}</td>
+            <td>${escapeAttr(entry.meridians)}</td>
+            <td>${escapeAttr(entry.rarity)}</td>
+            <td>${tag}</td>
+        </tr>`;
+    });
+    html += `</tbody></table>`;
+    html += `<details style="margin-top:10px;"><summary>查看原始 OCR 文字（除錯用）</summary><pre style="white-space:pre-wrap;font-size:0.8em;color:var(--text-muted);">${escapeAttr(rawText)}</pre></details>`;
+    resultWrap.innerHTML = html;
+}
 </script>
 </body>
 </html>
