@@ -158,8 +158,13 @@
             <div class="status" style="flex-basis:100%;">
                 📷 影低或上傳藥方相片 → 自動用 OCR 讀出藥材名稱 → 對照資料庫列出性味歸經。全程喺瀏覽器本機處理，<b>相片唔會上傳到任何伺服器，辨識完成即時釋放，唔會儲存。</b>
             </div>
-            <input type="file" id="scanFileInput" accept="image/*" capture="environment" style="display:none;" onchange="handleScanFile(this.files[0])">
-            <button class="btn primary" onclick="document.getElementById('scanFileInput').click()">📷 影相 / 選擇藥方相片</button>
+            <input type="file" id="scanCameraInput" accept="image/*" capture="environment" style="display:none;" onchange="handleScanFile(this.files[0])">
+            <input type="file" id="scanFileInput" accept="image/*" style="display:none;" onchange="handleScanFile(this.files[0])">
+            <button class="btn primary" onclick="document.getElementById('scanCameraInput').click()">📷 即場影相</button>
+            <button class="btn primary" onclick="document.getElementById('scanFileInput').click()">🖼️ 從相簿 / 檔案選擇</button>
+            <label style="display:flex;align-items:center;gap:6px;font-size:0.85em;color:var(--text-muted);cursor:pointer;white-space:nowrap;">
+                <input type="checkbox" id="scanVertical"> 藥方為直排 (由右至左直書)
+            </label>
             <button class="btn danger" id="scanClearBtn" onclick="clearScan()" disabled>🗑️ 清除結果</button>
             <span class="status" id="scanStatus"></span>
         </div>
@@ -171,6 +176,7 @@
 
 <script src="medData.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
 <script>
 const ADMIN_PASSWORD = "640480";
 const PRIMARY_OPTIONS = ["植物藥", "動物藥", "金石藥"];
@@ -566,11 +572,21 @@ function switchTab(tab) {
 
 // ================== 藥方掃描 (OCR, 不使用 AI) ==================
 let scanImgObjectUrl = null;
+let occConverter = null; // 簡轉繁 (遲啟動)
+
+function getOccConverter() {
+    if (!occConverter && typeof OpenCC !== 'undefined') {
+        try { occConverter = OpenCC.Converter({ from: 'cn', to: 'hk' }); } catch (e) { console.error(e); }
+    }
+    return occConverter;
+}
 
 function clearScan() {
     if (scanImgObjectUrl) { URL.revokeObjectURL(scanImgObjectUrl); scanImgObjectUrl = null; }
-    const input = document.getElementById('scanFileInput');
-    if (input) input.value = '';
+    const camInput = document.getElementById('scanCameraInput');
+    const fileInput = document.getElementById('scanFileInput');
+    if (camInput) camInput.value = '';
+    if (fileInput) fileInput.value = '';
     document.getElementById('scanResultWrap').innerHTML = '';
     document.getElementById('scanStatus').textContent = '';
     document.getElementById('scanClearBtn').disabled = true;
@@ -591,30 +607,46 @@ async function handleScanFile(file) {
         return;
     }
 
+    const vertical = document.getElementById('scanVertical').checked;
+    const langs = vertical ? 'chi_tra_vert+chi_sim_vert' : 'chi_tra+chi_sim';
+    let worker = null;
     try {
-        statusEl.textContent = '⏳ 準備辨識 (首次使用需下載語言包，請稍候)...';
-        const { data } = await Tesseract.recognize(file, 'chi_tra', {
+        statusEl.textContent = '⏳ 準備辨識 (首次使用呢個方向/字體需下載語言包，請稍候)...';
+        worker = await Tesseract.createWorker(langs, 1, {
             logger: m => {
                 if (m.status && m.progress != null) {
                     statusEl.textContent = `⏳ ${m.status} ${(m.progress * 100).toFixed(0)}%`;
                 }
             }
         });
+        if (vertical) {
+            const psm = (Tesseract.PSM && Tesseract.PSM.SINGLE_BLOCK_VERT_TEXT) || '5';
+            await worker.setParameters({ tessedit_pageseg_mode: psm });
+        }
+        const { data } = await worker.recognize(file);
         const rawText = data.text || '';
 
         // 相片已完成辨識，立即釋放，不會保留任何複本
         if (scanImgObjectUrl) { URL.revokeObjectURL(scanImgObjectUrl); scanImgObjectUrl = null; }
-        const input = document.getElementById('scanFileInput');
-        if (input) input.value = '';
+        const camInput = document.getElementById('scanCameraInput');
+        const fileInput = document.getElementById('scanFileInput');
+        if (camInput) camInput.value = '';
+        if (fileInput) fileInput.value = '';
         const preview = document.getElementById('scanPreviewImg');
         if (preview) preview.remove();
 
-        renderScanResult(rawText);
+        // 資料庫全部用繁體記錄，簡體辨識結果先轉繁體先比對，兩種字體嘅藥方都啱用
+        const conv = getOccConverter();
+        const matchText = conv ? conv(rawText) : rawText;
+
+        renderScanResult(matchText, rawText);
         statusEl.textContent = '✅ 辨識完成，相片已即時釋放（不會上傳或儲存）。';
     } catch (e) {
         console.error(e);
         statusEl.textContent = '❌ 辨識失敗：' + e.message;
         if (scanImgObjectUrl) { URL.revokeObjectURL(scanImgObjectUrl); scanImgObjectUrl = null; }
+    } finally {
+        if (worker) { try { await worker.terminate(); } catch (e) {} }
     }
 }
 
@@ -698,13 +730,17 @@ function matchHerbsFromText(rawText) {
     return matched;
 }
 
-function renderScanResult(rawText) {
+function renderScanResult(matchText, rawText) {
     const resultWrap = document.getElementById('scanResultWrap');
-    const matched = matchHerbsFromText(rawText);
+    if (rawText == null) rawText = matchText;
+    const matched = matchHerbsFromText(matchText);
+    const debugBlock = `<details style="margin-top:10px;"><summary>查看原始 OCR 文字（除錯用）</summary>
+        <pre style="white-space:pre-wrap;font-size:0.8em;color:var(--text-muted);">${escapeAttr(rawText)}</pre>
+        ${rawText !== matchText ? `<div style="font-size:0.8em;color:var(--text-muted);margin-top:6px;">簡轉繁後用於比對：</div><pre style="white-space:pre-wrap;font-size:0.8em;color:var(--text-muted);">${escapeAttr(matchText)}</pre>` : ''}
+    </details>`;
 
     if (matched.size === 0) {
-        resultWrap.innerHTML = `<div class="empty-state">未能從相片辨識出任何已知藥材，請確保相片清晰、光線充足，藥名為印刷體較易成功。</div>
-            <details style="margin-top:10px;"><summary>查看原始 OCR 文字</summary><pre style="white-space:pre-wrap;font-size:0.8em;color:var(--text-muted);">${escapeAttr(rawText)}</pre></details>`;
+        resultWrap.innerHTML = `<div class="empty-state">未能從相片辨識出任何已知藥材，請確保相片清晰、光線充足，藥名為印刷體較易成功。</div>${debugBlock}`;
         return;
     }
 
@@ -736,7 +772,7 @@ function renderScanResult(rawText) {
         </tr>`;
     });
     html += `</tbody></table>`;
-    html += `<details style="margin-top:10px;"><summary>查看原始 OCR 文字（除錯用）</summary><pre style="white-space:pre-wrap;font-size:0.8em;color:var(--text-muted);">${escapeAttr(rawText)}</pre></details>`;
+    html += debugBlock;
     resultWrap.innerHTML = html;
 }
 </script>
