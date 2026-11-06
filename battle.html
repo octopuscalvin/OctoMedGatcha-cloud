@@ -94,7 +94,7 @@ kbd{background:#333;border:1px solid #555;border-radius:3px;padding:0 4px;font-s
 .ok{color:#7ee08e}.no{color:#777}.bad{color:#ff7b7e}
 button,select,input,label{touch-action:manipulation}
 #stats{overflow-x:auto}
-#mbar{display:none}
+#mbar,#scrim,.drawer-head{display:none}
 /* ================= 電話版 ================= */
 @media(max-width:640px){
   body{font-size:13px;padding-bottom:calc(64px + env(safe-area-inset-bottom))}
@@ -136,6 +136,16 @@ button,select,input,label{touch-action:manipulation}
   #mbar button{font-size:15px;padding:10px 0;flex:1}
   #mbar #mFire{flex:2;font-weight:bold}
   #mbar #mFire.ready{background:var(--gold);color:#000;border-color:var(--gold);animation:pulse .8s infinite alternate}
+  /* 右邊抽屜：設定／編輯 */
+  #side{position:fixed;top:0;right:0;bottom:0;width:min(88vw,420px);z-index:30;background:var(--bg);overflow-y:auto;overscroll-behavior:contain;
+    padding:0 10px calc(16px + env(safe-area-inset-bottom));box-shadow:-6px 0 18px rgba(0,0,0,.55);border-left:1px solid #333;
+    transform:translateX(105%);transition:transform .25s ease;visibility:hidden}
+  body.drawer #side{transform:none;visibility:visible}
+  body.drawer{overflow:hidden}
+  body.drawer #scrim{display:block;position:fixed;inset:0;z-index:25;background:rgba(0,0,0,.5)}
+  .drawer-head{display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:2;background:var(--bg);padding:10px 0 8px;margin-bottom:4px;border-bottom:1px solid #333}
+  .drawer-head button{padding:4px 12px}
+  #side .tabs{position:sticky;top:49px;z-index:2;background:var(--bg);padding-bottom:6px;margin-bottom:6px}
 }
 </style>
 </head>
@@ -174,20 +184,28 @@ button,select,input,label{touch-action:manipulation}
     <div class="panel"><h3>輸出統計 <span id="clock" style="float:right;color:var(--muted);font-weight:normal"></span></h3><div id="stats"></div></div>
     <div class="panel"><h3>戰鬥紀錄（由舊到新）<span class="acts"><button id="btnCopyRep" title="複製完整戰報，可以直接貼畀 Claude">📋 複製戰報</button><button id="btnSaveRep">💾 下載戰報</button></span></h3><div id="log"></div></div>
   </section>
-  <section>
+  <section id="side">
+    <div class="drawer-head"><b>⚙ 設定／編輯</b><button id="drawerClose" aria-label="關閉">✕</button></div>
     <div class="tabs" id="tabs"></div>
     <div class="panel" id="editor" style="margin-top:0"></div>
   </section>
 </main>
+<div id="scrim"></div>
 <div id="mbar">
   <button id="mPlay" class="primary">▶ 開始</button>
   <button id="mFire" disabled>出招</button>
   <button id="mReset">↺</button>
   <button id="mInstant">⚡</button>
+  <button id="mDrawer" aria-label="設定／編輯">☰</button>
 </div>
 <script>
 /* ================= 基本資料 ================= */
 const isPhone=()=>matchMedia('(max-width:640px)').matches;
+// 電話版右邊抽屜
+function openDrawer(){document.body.classList.add('drawer')}
+function closeDrawer(){document.body.classList.remove('drawer')}
+// 撳卡／病魔：電腦照舊；電話喺戰鬥停咗嘅時候先打開抽屜
+function showEditor(){if(isPhone()&&!playing)openDrawer()}
 const MERIDIANS=['心','肝','脾','肺','腎','胃','大腸','膀胱'];          // 病魔弱點只會係呢 8 個
 const ALL_MER=[...MERIDIANS,'膽','小腸','三焦','心包'];             // 少女歸經可以多啲
 const DETOX=['甘草','綠豆'];                                        // 匯入資料庫時當解毒嘅藥
@@ -441,7 +459,7 @@ function renderStage(){
     const b=findMember(s),g=b?b.x.g:getGirl(s),usable=slotUsable(s);
     const isAlly=i>=3&&!M().six;
     const lead=(s==='A'||s==='D')&&(isAlly?S.leaderOn.ally:S.leaderOn.ours);
-    const c=h('div',{class:'card'+(isAlly?' ally':'')+(b?'':' off')+(s===selSlot?' sel':''),id:'card-'+s,onclick:()=>{selSlot=s;tab='girl';renderTabs();renderEditor();document.querySelectorAll('.card').forEach(e=>e.classList.toggle('sel',e.id==='card-'+s));if(isPhone()&&!playing)$('#tabs').scrollIntoView({behavior:'smooth'})}},
+    const c=h('div',{class:'card'+(isAlly?' ally':'')+(b?'':' off')+(s===selSlot?' sel':''),id:'card-'+s,onclick:()=>{selSlot=s;tab='girl';renderTabs();renderEditor();document.querySelectorAll('.card').forEach(e=>e.classList.toggle('sel',e.id==='card-'+s));showEditor()}},
       h('span',{class:'sl'},s));
     if(!usable){c.append(h('div',{class:'note'},'此模式無此位'));return c}
     if(!b){c.append(h('div',{class:'note'},'（空位）'));return c}
@@ -745,7 +763,14 @@ function initHeader(){
   $('#fileIn').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const s=JSON.parse(await f.text());if(!s.rules||!s.modes)throw 0;S=adopt(s);save();initHeader();resetBattle();renderEditor()}catch(_){alert('JSON 格式唔啱')}e.target.value=''};
   $('#btnDefault').onclick=()=>{if(confirm('還原全部預設？自訂數據會清除')){S=defaults();save();initHeader();resetBattle();renderEditor()}};
 }
-$('#dBox').onclick=()=>{tab='enemy';renderTabs();renderEditor();if(isPhone()&&!playing)$('#tabs').scrollIntoView({behavior:'smooth'})};
+$('#dBox').onclick=()=>{tab='enemy';renderTabs();renderEditor();showEditor()};
+$('#mDrawer').onclick=openDrawer;$('#drawerClose').onclick=closeDrawer;$('#scrim').onclick=closeDrawer;
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer()});
+matchMedia('(max-width:640px)').addEventListener('change',e=>{if(!e.matches)closeDrawer()});
+// 向右掃關抽屜
+{let x0=null,y0=0;const sd=$('#side');
+ sd.addEventListener('touchstart',e=>{x0=e.touches[0].clientX;y0=e.touches[0].clientY},{passive:true});
+ sd.addEventListener('touchend',e=>{if(x0==null)return;const dx=e.changedTouches[0].clientX-x0,dy=Math.abs(e.changedTouches[0].clientY-y0);if(dx>70&&dy<50)closeDrawer();x0=null},{passive:true});}
 function adminOK(){if(!HOSTED)return true;try{return sessionStorage.getItem(ADMIN_KEY)==='1'}catch(e){return false}}
 if(!adminOK()){
   document.body.replaceChildren(h('div',{style:'max-width:420px;margin:18vh auto;padding:24px;text-align:center;border:1px solid #444;border-radius:12px;background:var(--panel)'},
