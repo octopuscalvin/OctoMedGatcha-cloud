@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>草藥少女戰鬥模擬器</title>
+<style>
+:root{--bg:#1e1e1e;--panel:#262626;--line:#4a4a4a;--text:#e8e8e8;--muted:#9a9a9a;--red:#e5484d;--green:#46a758;--gold:#f5c542;--blue:#4c8dff;--ally:#b07cff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 "Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif}
+header{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid #333;position:sticky;top:0;background:var(--bg);z-index:5}
+header h1{font-size:16px;margin:0 10px 0 0}
+button,select,input{font:inherit;color:var(--text);background:#333;border:1px solid #555;border-radius:6px;padding:3px 8px}
+input[type=number]{width:80px}
+button{cursor:pointer}button:hover{background:#3f3f3f}button:disabled{cursor:default;opacity:.6}
+button.primary{background:#2d5bd1;border-color:#2d5bd1}
+.sep{width:1px;height:22px;background:#444;margin:0 4px}
+main{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px;padding:16px}
+@media(max-width:1050px){main{grid-template-columns:minmax(0,1fr)}}
+main>section{min-width:0}
+.stage{border:1px solid #bbb;padding:18px 22px 22px;position:relative}
+.bar{height:24px;border:1px solid #ccc;position:relative;overflow:hidden}
+.bar>i{position:absolute;left:0;top:0;bottom:0;background:var(--green);transition:width .08s linear}
+.bar>span{position:absolute;inset:0;text-align:center;font-size:13px;line-height:22px;text-shadow:0 0 3px #000}
+.bar.red{height:12px;border-color:var(--red);margin:0 6%}
+.bar.red>i{background:var(--red)}
+.sub{font-size:12px;color:var(--muted);text-align:center;margin-top:3px}
+.disease{margin:20px auto 12px;width:56%;min-height:130px;border:1px solid #ccc;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;position:relative;padding:10px}
+.disease .nm{font-size:18px}
+.tags{display:flex;flex-wrap:wrap;gap:4px;justify-content:center}
+.tag{font-size:11px;padding:0 6px;border:1px solid #666;border-radius:10px;color:#ddd}
+.tag.w{border-color:var(--red);color:#ff9a9c}.tag.l{border-color:var(--green);color:#9be2a6}
+.slots{display:grid;grid-template-columns:repeat(3,1fr) 18px repeat(3,1fr);gap:10px;margin-top:20px}
+.card{border:1px solid #ccc;min-height:128px;padding:6px 7px;position:relative;cursor:pointer;font-size:12px}
+.card.ally{border-color:var(--ally)}
+.card.off{opacity:.3}
+.card.sel{outline:2px dashed var(--blue);outline-offset:2px}
+.card.act{box-shadow:0 0 0 2px var(--gold) inset}
+.card .sl{position:absolute;right:6px;top:4px;color:var(--muted);font-weight:bold}
+.card .nm{font-size:14px;font-weight:bold;padding-right:14px}
+.card .rar{color:var(--gold);letter-spacing:-1px}
+.card .st{color:var(--muted);margin-top:2px}
+.stance{display:flex;gap:3px;margin-top:4px}
+.stance button{flex:1;padding:1px 0;font-size:12px}
+.stance button.on.atk{background:#a3343a;border-color:#e5484d}
+.stance button.on.heal{background:#2f7d3f;border-color:#46a758}
+.crown{color:var(--gold)}
+.float{position:absolute;left:50%;top:35%;transform:translateX(-50%);font-weight:bold;font-size:15px;animation:up .9s forwards;pointer-events:none;white-space:nowrap;text-shadow:0 0 3px #000;z-index:3}
+.float.atk{color:#ff7b7e}.float.heal{color:#7ee08e}.float.tox{color:#c38bff}
+@keyframes up{to{transform:translate(-50%,-44px);opacity:0}}
+.cds{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+.cd{display:flex;align-items:center;gap:8px;font-size:12px}
+.cd>span:first-child{min-width:120px;color:var(--muted)}
+.cd .bar{flex:1;height:14px}
+.cd .bar>i{background:var(--blue);transition:none}
+.cd.ally .bar>i{background:var(--ally)}
+.cd.ready .bar>i{background:var(--gold)}
+.cd .fire{min-width:96px}
+.cd.ready .fire{background:var(--gold);color:#000;border-color:var(--gold);animation:pulse .8s infinite alternate}
+@keyframes pulse{to{box-shadow:0 0 10px var(--gold)}}
+.result{position:absolute;inset:0;background:rgba(0,0,0,.74);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;font-size:15px}
+.result b{font-size:28px}
+.result[hidden]{display:none}
+.panel{background:var(--panel);border:1px solid #333;border-radius:8px;padding:12px;margin-top:14px}
+.panel h3{margin:0 0 8px;font-size:14px}
+table{border-collapse:collapse;width:100%;font-size:12px}
+th,td{border-bottom:1px solid #383838;padding:3px 5px;text-align:right}
+th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left}
+tr.tot td{font-weight:bold;border-top:1px solid #666}
+.vs{display:flex;height:18px;border-radius:4px;overflow:hidden;margin:6px 0;font-size:11px;line-height:18px}
+.vs div{text-align:center;white-space:nowrap;overflow:hidden}
+#log{height:220px;overflow:auto;font:12px/1.45 Consolas,"Microsoft JhengHei",monospace;color:#cfcfcf}
+#log .ours{color:#9cc2ff}#log .ally{color:#d3b4ff}#log .sys{color:var(--gold)}#log .sum{color:#7d7d7d}
+.panel h3 .acts{float:right;display:flex;gap:4px}.panel h3 .acts button{font-size:12px;padding:1px 8px;font-weight:normal}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px}
+.tabs button{border-radius:6px 6px 0 0}
+.tabs button.on{background:#2d5bd1;border-color:#2d5bd1}
+.f{display:flex;align-items:center;gap:8px;margin:5px 0;flex-wrap:wrap}
+.f>span:first-child{min-width:92px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{padding:1px 9px;border-radius:12px;font-size:13px}
+.chip.on{background:#2d5bd1;border-color:#2d5bd1}
+.note{font-size:12px;color:var(--muted);margin:6px 0}
+.preview{background:#1d1d1d;border:1px solid #3a3a3a;border-radius:6px;padding:8px;margin-top:8px;font-size:13px}
+.lib{display:grid;grid-template-columns:1fr auto;gap:4px 8px;align-items:center;font-size:13px}
+.lib .btns{display:flex;gap:3px;flex-wrap:wrap}.lib .btns button{padding:0 6px;font-size:12px}
+.mini td,.mini th{text-align:left}
+.mini input{width:70px}
+h4{margin:14px 0 4px;font-size:13px;color:var(--gold)}
+.teaminfo{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.7}
+.teaminfo b{color:var(--text)}
+.hint{font-size:12px;color:var(--muted);margin-top:8px}
+kbd{background:#333;border:1px solid #555;border-radius:3px;padding:0 4px;font-size:11px}
+.ok{color:#7ee08e}.no{color:#777}.bad{color:#ff7b7e}
+button,select,input,label{touch-action:manipulation}
+#stats{overflow-x:auto}
+#mbar{display:none}
+/* ================= 電話版 ================= */
+@media(max-width:640px){
+  body{font-size:13px;padding-bottom:calc(64px + env(safe-area-inset-bottom))}
+  header{position:static;padding:8px 10px;gap:6px}
+  header h1{font-size:15px;width:100%;margin:0}
+  header label{font-size:12px}
+  header #btnPlay,header #btnReset{display:none}
+  .sep{display:none}
+  button,select,input{font-size:16px;padding:5px 8px}       /* 16px 防 iOS 自動放大 */
+  header button,header select{font-size:13px}
+  main{padding:8px;gap:10px}
+  .stage{padding:10px 10px 12px}
+  .bar{height:22px}.bar>span{font-size:12px;line-height:20px}
+  .disease{width:100%;min-height:84px;margin:12px 0 8px;padding:8px}
+  .disease .nm{font-size:16px}
+  .bar.red{margin:0}
+  .slots{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:12px}
+  .slots>div:nth-child(4){grid-column:1/-1;height:0}
+  .card{min-height:0;padding:5px;font-size:11px}
+  .card .nm{font-size:13px;word-break:break-all}
+  .card .sl{right:4px;top:2px}
+  .stance button{padding:7px 0;font-size:13px}
+  .float{font-size:13px}
+  .cd{flex-wrap:wrap;gap:4px}
+  .cd>span:first-child{min-width:0;width:100%}
+  .cd .fire,.cd .note{display:none}
+  .panel{padding:10px;margin-top:10px}
+  #stats table{min-width:470px}
+  #log{height:260px;font-size:11px}
+  .tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .tabs button{flex:none}
+  .f>span:first-child{min-width:72px}
+  .chip{padding:4px 10px}
+  .lib{grid-template-columns:1fr;gap:2px}
+  .lib .btns{margin-bottom:8px}.lib .btns button{padding:4px 10px;font-size:13px}
+  .panel h3 .acts{float:none;margin-top:6px}
+  .result b{font-size:22px}
+  #mbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:10;gap:6px;padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:#181818;border-top:1px solid #333}
+  #mbar button{font-size:15px;padding:10px 0;flex:1}
+  #mbar #mFire{flex:2;font-weight:bold}
+  #mbar #mFire.ready{background:var(--gold);color:#000;border-color:var(--gold);animation:pulse .8s infinite alternate}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>🌿 草藥少女戰鬥模擬器</h1>
+  <label>模式 <select id="modeSel"></select></label>
+  <label>我方操作 <select id="ctrlSel"><option value="manual">手動揀招</option><option value="auto">自動（用預設行動）</option></select></label>
+  <label title="CD 滿咗之後停住時間等你揀"><input type="checkbox" id="waitChk"> 揀招時暫停</label>
+  <span class="sep"></span>
+  <button class="primary" id="btnPlay">▶ 開始</button>
+  <button id="btnReset">↺ 重置</button>
+  <label>速度 <select id="speedSel"><option selected>1</option><option>2</option><option>5</option><option>10</option><option>20</option></select>x</label>
+  <button id="btnInstant" title="用自動模式即刻計結果">⚡ 即時結算</button>
+  <button id="btnBatch" title="用自動模式跑 100 場">🎲 模擬 100 次</button>
+  <span class="sep"></span>
+  <button id="btnExport">匯出 JSON</button>
+  <button id="btnImport">匯入 JSON</button>
+  <button id="btnDefault" title="清除所有自訂數據">還原預設</button>
+  <input type="file" id="fileIn" accept=".json" hidden>
+</header>
+<main>
+  <section>
+    <div class="stage" id="stage">
+      <div class="bar" id="pBar"><i></i><span></span></div>
+      <div class="sub" id="rateTxt"></div>
+      <div class="disease" id="dBox" title="點擊編輯病魔"></div>
+      <div class="bar red" id="eBar"><i></i></div>
+      <div class="sub" id="eTxt"></div>
+      <div class="slots" id="slots"></div>
+      <div class="cds" id="cds"></div>
+      <div class="teaminfo" id="teamInfo"></div>
+      <div class="hint" id="hint"></div>
+      <div class="result" id="result" hidden></div>
+    </div>
+    <div class="panel"><h3>輸出統計 <span id="clock" style="float:right;color:var(--muted);font-weight:normal"></span></h3><div id="stats"></div></div>
+    <div class="panel"><h3>戰鬥紀錄（由舊到新）<span class="acts"><button id="btnCopyRep" title="複製完整戰報，可以直接貼畀 Claude">📋 複製戰報</button><button id="btnSaveRep">💾 下載戰報</button></span></h3><div id="log"></div></div>
+  </section>
+  <section>
+    <div class="tabs" id="tabs"></div>
+    <div class="panel" id="editor" style="margin-top:0"></div>
+  </section>
+</main>
+<div id="mbar">
+  <button id="mPlay" class="primary">▶ 開始</button>
+  <button id="mFire" disabled>出招</button>
+  <button id="mReset">↺</button>
+  <button id="mInstant">⚡</button>
+</div>
+<script>
+/* ================= 基本資料 ================= */
+const isPhone=()=>matchMedia('(max-width:640px)').matches;
+const MERIDIANS=['心','肝','脾','肺','腎','胃','大腸','膀胱'];          // 病魔弱點只會係呢 8 個
+const ALL_MER=[...MERIDIANS,'膽','小腸','三焦','心包'];             // 少女歸經可以多啲
+const DETOX=['甘草','綠豆'];                                        // 匯入資料庫時當解毒嘅藥
+// 放咗上網（本草抽卡 GitHub Pages 嘅 battle.html）就要管理員模式；本機 file:// 開唔使
+const HOSTED=/^https?:$/.test(location.protocol);
+const ADMIN_KEY='octoMedAdmin';
+const GH_DB='https://octopuscalvin.github.io/OctoMedGatcha-cloud/medData.js';
+// 網上：同資料夾 medData.js；本機：本草抽卡資料夾 → 網上 → 同資料夾後備副本
+const DB_PATHS=HOSTED?['medData.js',GH_DB]:['../OctoMedGatcha-cloud/OctoMedGatcha-cloud/medData.js',GH_DB,'medData.js'];
+const NATURES=['寒','涼','平','溫','熱'];
+const FLAVORS=['酸','苦','甘','辛','鹹','淡','澀'];
+const PATHOS=['無','熱','寒'];
+const COUNTER={熱:['寒','涼'],寒:['溫','熱']};      // 病性 → 可對症嘅藥性
+const RARITIES=['N','R','SR','SSR','UR'];
+const SLOTS=['A','B','C','D','E','F'];
+const ACT={atk:'攻',heal:'回'};
+const DT=0.05;
+const KEY='herbBattleSim.v3';
+
+/* ================= 本草抽卡資料庫 ================= */
+let HERBS=[],DB_SRC='';
+function loadScript(src){return new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=no;document.head.append(s)})}
+async function loadDB(){
+  for(const p of DB_PATHS){try{await loadScript(p);if(typeof medData!=='undefined'){DB_SRC=p;break}}catch(e){}}
+  if(typeof medData==='undefined')return;
+  HERBS=medData.map(fromMed);
+}
+// medData 一條 → 少女：nature 例「苦、辛，大熱，有大毒」= 味，性，毒
+function fromMed(m){
+  const parts=String(m.nature||'').split(/[，,]/).map(x=>x.trim());
+  const flavors=[...new Set((parts[0]||'').split(/[、\s]+/).map(f=>f.replace(/^微/,'')).filter(f=>FLAVORS.includes(f)))];
+  const t=(parts[1]||'').split('偏')[0];
+  const nature=/熱/.test(t)?'熱':/溫/.test(t)?'溫':/涼/.test(t)?'涼':/寒|冷/.test(t)?(t.startsWith('微')?'涼':'寒'):'平';
+  const tox=parts.slice(1).join('');
+  const toxic=/大毒/.test(tox)?10:/小毒/.test(tox)?3:/毒/.test(tox)?5:0;
+  const meridians=String(m.meridians||'').split(/[、，,\s]+/).filter(Boolean);
+  return{name:m.name,rarity:RARITIES.includes(m.rarity)?m.rarity:'N',nature,flavors,meridians,stance:'atk',toxic,detox:DETOX.includes(m.name),
+    natureRaw:m.nature,primary:m.primary,secondary:m.secondary};
+}
+function allLib(){const names=new Set(S.library.map(g=>g.name));return[...S.library.map(g=>Object.assign({custom:true},g)),...HERBS.filter(g=>!names.has(g.name))]}
+function findHerb(name){return allLib().find(g=>g.name===name)}
+
+const G=(name,rarity='SR',nature='平',flavors=[],meridians=[],stance='atk',toxic=0,detox=false)=>({name,rarity,nature,flavors,meridians,stance,toxic,detox});
+const EMPTY=()=>G('','SR','平',[],[],'atk');
+const clone=o=>JSON.parse(JSON.stringify(o));
+
+// 由資料庫攞，攞唔到就用後備值
+function pick(name,stance,fb){const h=HERBS.find(g=>g.name===name);return h?Object.assign(clone(h),{stance}):fb}
+function defaults(){return{
+  mode:'story', control:'manual', wait:false, hpRounds:10,
+  rules:{
+    baseDmg:50, weakDmg:100, natureAsWeak:false,
+    healPerFlavor:2.5, natureHeal:2.5, rarityOnHeal:true,
+    rarity:{N:{stars:1,mod:-25},R:{stars:2,mod:-10},SR:{stars:3,mod:0},SSR:{stars:4,mod:10},UR:{stars:5,mod:15}},
+    interval:[[15,1],[10,1.5],[5,2],[3,2.5]], intervalMode:'step',
+    buffAtk:5, buffHeal:5, buffDmg:5, toxicOn:true, toxicDebuff:20,
+    autoHealBelow:40, firstAt0:false, maxTime:600,
+  },
+  modes:{
+    gather:{label:'採藥戰',decay:[{above:80,pct:1,per:2},{above:50,pct:1,per:10},{above:0,pct:1,per:20}],regen:0,ally:1,allyRandom:true,six:false,starScale:1},
+    story:{label:'故事戰',decay:[{above:80,pct:1,per:1},{above:50,pct:1,per:5},{above:25,pct:1,per:10},{above:0,pct:1,per:15}],regen:0,ally:3,allyRandom:false,six:false,starScale:1},
+    boss:{label:'大佬・癌魔（我方6人）',decay:[{above:80,pct:3,per:1},{above:20,pct:2,per:1},{above:0,pct:1,per:1}],regen:1,ally:0,allyRandom:false,six:true,starScale:2},
+  },
+  enemies:{
+    gather:{name:'肺熱咳嗽魔',maxHp:4000,weak:['肺','心'],patho:'熱',likes:['甘','苦']},
+    story:{name:'心火熱毒魔',maxHp:6000,weak:['心','肺'],patho:'熱',likes:['甘','苦']},
+    boss:{name:'癌魔',maxHp:20000,weak:['肝','脾','腎','肺'],patho:'寒',likes:['甘','辛']},
+  },
+  leaderOn:{ours:true,ally:true},
+  ours:[pick('人參','atk',G('人參','SR','溫',['甘','苦'],['脾','肺','心'],'atk')),pick('金銀花','atk',G('金銀花','N','寒',['甘'],['肺','心','胃'],'atk')),pick('當歸','heal',G('當歸','R','溫',['甘','辛'],['肝','心','脾'],'heal')),
+        pick('附子','atk',G('附子','SR','熱',['辛','甘'],['心','腎','脾'],'atk',5)),pick('枸杞子','heal',G('枸杞子','N','平',['甘'],['肝','腎'],'heal')),pick('甘草','heal',G('甘草','N','平',['甘'],['心','肺','脾','胃'],'heal',0,true))],
+  ally:[pick('野生雪上一枝蒿','atk',G('野生雪上一枝蒿','UR','熱',['苦','辛'],['肝','腎'],'atk',10)),pick('黃連','atk',G('黃連','R','寒',['苦'],['心','脾','胃','肝','膽','大腸'],'atk')),pick('菊花','atk',G('菊花','N','涼',['辛','甘','苦'],['肺','肝'],'atk'))],
+  library:[],   // 只放「自訂／改過」嘅少女；本草抽卡資料庫每次開頁重新讀
+}}
+
+/* ================= 狀態 ================= */
+let S;
+function fixGirl(g){if(g&&!g.stance){g.stance=/^[回補Hh]/.test(g.pattern||'')?'heal':'atk'}if(g)delete g.pattern;return g}
+function adopt(s){const d=defaults();const o=Object.assign(d,s);o.rules=Object.assign(defaults().rules,s.rules);[...o.ours,...o.ally,...o.library].forEach(fixGirl);return o}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));S=s&&s.rules&&s.modes?adopt(s):defaults()}catch(e){S=defaults()}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const M=()=>S.modes[S.mode];
+const E=()=>S.enemies[S.mode];
+function getGirl(slot){const i=SLOTS.indexOf(slot);if(i<3)return S.ours[i];return M().six?S.ours[i]:S.ally[i-3]}
+function setGirl(slot,g){const i=SLOTS.indexOf(slot);if(i<3||M().six)S.ours[i]=g;else S.ally[i-3]=g}
+function slotUsable(slot){const i=SLOTS.indexOf(slot);if(i<3||M().six)return true;return i-3<M().ally}
+
+/* ================= 計算公式 ================= */
+const inter=arrs=>arrs.length?arrs.reduce((a,b)=>a.filter(x=>b.includes(x))):[];
+const fmt=n=>Math.round(n).toLocaleString();
+const fmt1=n=>(Math.round(n*10)/10).toString();
+function intervalFor(stars,R){
+  const t=[...R.interval].sort((a,b)=>a[0]-b[0]);
+  if(R.intervalMode==='step'){let v=t[0][1];for(const[s,iv]of t)if(stars>=s)v=iv;return v}
+  if(stars<=t[0][0])return t[0][1];
+  for(let i=1;i<t.length;i++)if(stars<=t[i][0]){const[a,x]=t[i-1],[b,y]=t[i];return x+(y-x)*(stars-a)/(b-a)}
+  return t[t.length-1][1];
+}
+function counters(g,en){return !!(COUNTER[en.patho]&&COUNTER[en.patho].includes(g.nature))}
+function calcAtk(g,en,R,atkBuff=0){
+  const hits=g.meridians.filter(m=>en.weak.includes(m));
+  const ctr=counters(g,en);
+  const n=hits.length+(R.natureAsWeak&&ctr?1:0);
+  const base=n>0?n*R.weakDmg:R.baseDmg;
+  const mod=R.rarity[g.rarity].mod;
+  return{dmg:base*(1+mod/100)*(1+atkBuff/100),hits,ctr,n,base};
+}
+function calcHeal(g,en,R){
+  const fl=g.flavors.filter(f=>en.likes.includes(f));
+  const ctr=counters(g,en);
+  let heal=fl.length*R.healPerFlavor+(ctr?R.natureHeal:0);
+  if(R.rarityOnHeal)heal*=1+R.rarity[g.rarity].mod/100;
+  return{heal,fl,ctr};
+}
+
+/* ================= 戰鬥引擎 ================= */
+function buildTeams(S,rng){
+  const m=S.modes[S.mode];
+  const mk=(side,label,slots,girls,leader)=>({side,label,leader,buffHeal:0,buffDmg:0,debuff:0,
+    members:slots.map((s,i)=>({slot:s,g:girls[i]})).filter(x=>x.g&&x.g.name)});
+  if(m.six)return[mk('ours','我方',SLOTS,S.ours.slice(0,6),S.leaderOn.ours)].filter(t=>t.members.length);
+  const T=[mk('ours','我方',['A','B','C'],S.ours.slice(0,3),S.leaderOn.ours)];
+  if(m.ally>0){
+    let girls=S.ally.slice(0,m.ally);
+    const lib=allLib();
+    if(m.allyRandom&&lib.length)girls=Array.from({length:m.ally},()=>clone(lib[Math.floor(rng()*lib.length)]));
+    T.push(mk('ally','友方',['D','E','F'].slice(0,m.ally),girls,S.leaderOn.ally));
+  }
+  return T.filter(t=>t.members.length);
+}
+class Battle{
+  // opt.manual：我方要手動出招；opt.wait：CD 滿咗等出招期間停住時間
+  constructor(S,rng=Math.random,opt={}){
+    this.R=clone(S.rules);this.M=clone(S.modes[S.mode]);this.M.decay.sort((a,b)=>b.above-a.above);
+    this.E=clone(S.enemies[S.mode]);this.eMax=Math.max(1,+this.E.maxHp);this.eHp=this.eMax;this.pHp=100;this.t=0;
+    this.manual=!!opt.manual;this.wait=!!opt.wait;
+    this.over=null;this.events=[];this.log=[];
+    this.teams=buildTeams(S,rng).map(t=>this.prep(t));
+  }
+  prep(tm){
+    const R=this.R,gs=tm.members.map(x=>x.g),n=gs.length,lead=tm.leader&&n>=2;
+    tm.stars=gs.reduce((s,g)=>s+R.rarity[g.rarity].stars,0);
+    tm.scale=this.M.starScale||1;                       // 癌魔 6 人：星數門檻 ×2
+    tm.interval=intervalFor(tm.stars/tm.scale,R);
+    tm.sameNature=lead&&gs.every(g=>g.nature===gs[0].nature);
+    tm.commonFlavor=lead?inter(gs.map(g=>g.flavors)):[];
+    tm.commonMer=lead?inter(gs.map(g=>g.meridians)):[];
+    tm.hasToxic=R.toxicOn&&gs.some(g=>+g.toxic>0);tm.hasDetox=gs.some(g=>g.detox);
+    tm.toxicDebuff=tm.hasToxic&&!tm.hasDetox;
+    tm.atkBuff=tm.sameNature?R.buffAtk:0;
+    tm.manual=this.manual&&tm.side==='ours';
+    tm.timer=R.firstAt0?tm.interval:0;tm.round=0;tm.ready=false;
+    tm.members.forEach(x=>Object.assign(x,{dmg:0,heal:0,tox:0,atkN:0,healN:0,choice:x.g.stance||'atk'}));
+    return tm;
+  }
+  ePct(){return this.eHp/this.eMax*100}
+  decay(){const p=this.ePct();for(const r of this.M.decay)if(p>r.above)return r;return null}
+  waiting(){return this.wait&&this.teams.some(t=>t.ready)}
+  ev(slot,side,type,val,text){this.events.push({slot,type,val});if(text)this.log.push({t:this.t,side,text})}
+  step(dt){
+    if(this.over||this.waiting())return;
+    this.t+=dt;
+    const d=this.decay();if(d)this.pHp-=d.pct/d.per*dt;
+    if(this.M.regen)this.eHp=Math.min(this.eMax,this.eHp+this.M.regen/100*this.eMax*dt);
+    if(this.check())return;
+    for(const tm of this.teams){
+      if(tm.ready)continue;
+      tm.timer+=dt;
+      while(tm.timer>=tm.interval-1e-9&&!this.over){
+        if(tm.manual){tm.timer=tm.interval;tm.ready=true;break}
+        tm.timer-=tm.interval;this.autoChoose(tm);this.round(tm);
+      }
+    }
+    this.check();
+  }
+  fire(tm){if(!tm.ready||this.over)return;tm.ready=false;tm.timer=0;this.round(tm)}
+  autoChoose(tm){
+    tm.members.forEach(x=>x.choice=x.g.stance||'atk');
+    const lim=this.R.autoHealBelow;
+    if(lim>0&&this.pHp<lim&&!tm.members.some(x=>x.choice==='heal')){
+      let best=null,bv=0;for(const x of tm.members){const v=calcHeal(x.g,this.E,this.R).heal;if(v>bv){bv=v;best=x}}
+      if(best)best.choice='heal';
+    }
+  }
+  round(tm){
+    tm.round++;const R=this.R,side=tm.side,lbl=`[${tm.label} R${tm.round}]`;
+    for(const x of tm.members){
+      if(this.over)return;
+      const g=x.g;
+      if(x.choice==='atk'){
+        const a=calcAtk(g,this.E,R,tm.atkBuff);
+        this.eHp-=a.dmg;x.dmg+=a.dmg;x.atkN++;
+        this.ev(x.slot,side,'atk',a.dmg,`${lbl} ${g.name} 攻擊 -${fmt(a.dmg)}`+(a.hits.length?`（命中 ${a.hits.join('、')}${R.natureAsWeak&&a.ctr?'＋藥性':''}）`:(a.n?'（藥性對症）':'（無弱點）')));
+        if(R.toxicOn&&+g.toxic>0){this.pHp-=+g.toxic;x.tox+=+g.toxic;this.ev(x.slot,side,'tox',+g.toxic,`　└ ${g.name} 毒性：病人 -${g.toxic}%`)}
+      }else{
+        const hl=calcHeal(g,this.E,R);const before=this.pHp;this.pHp=Math.min(100,this.pHp+hl.heal);
+        x.heal+=this.pHp-before;x.healN++;
+        this.ev(x.slot,side,'heal',hl.heal,`${lbl} ${g.name} 回復 +${fmt1(hl.heal)}%`+(hl.fl.length?`（合口味 ${hl.fl.join('、')}${hl.ctr?'＋藥性對症':''}）`:(hl.ctr?'（藥性對症）':'（無效：唔啱口味）')));
+      }
+      if(this.check())return;
+    }
+    const lead=tm.members[0].slot;
+    if(tm.round===1&&tm.commonMer.length){const d=R.buffDmg/100*this.eMax;this.eHp-=d;tm.buffDmg+=d;this.ev(lead,side,'atk',d,`　└ 隊長BUFF 歸經一致(${tm.commonMer.join('')})：病魔一次性 -${fmt(d)}`)}
+    if(tm.commonFlavor.length){const b=this.pHp;this.pHp=Math.min(100,this.pHp+R.buffHeal);tm.buffHeal+=this.pHp-b;this.ev(lead,side,'heal',R.buffHeal,`　└ 隊長BUFF 同味(${tm.commonFlavor.join('')})：病人 +${R.buffHeal}%`)}
+    if(tm.toxicDebuff){this.pHp-=R.toxicDebuff;tm.debuff+=R.toxicDebuff;this.ev(lead,side,'tox',R.toxicDebuff,`　└ DEBUFF 有毒無解毒：病人 -${R.toxicDebuff}%`)}
+    if(!this.check())this.log.push({t:this.t,side:'sum',text:`　＝ 病人 ${fmt1(this.pHp)}%｜病魔 ${fmt(this.eHp)}（${fmt1(this.ePct())}%）`});
+  }
+  check(){
+    if(this.over)return true;
+    if(this.eHp<=0){this.eHp=0;this.over='win'}
+    else if(this.pHp<=0){this.pHp=0;this.over='lose'}
+    else if(this.t>=this.R.maxTime)this.over='timeout';
+    if(this.over)this.log.push({t:this.t,side:'sys',text:{win:'★ 病魔生命歸零，戰鬥勝利！',lose:'✖ 病人生命歸零，戰鬥失敗',timeout:'⌛ 超出時間上限'}[this.over]});
+    return !!this.over;
+  }
+  run(){while(!this.over)this.step(DT);return this}
+  side(s){
+    const tms=this.teams.filter(t=>t.side===s),ms=tms.flatMap(t=>t.members);
+    const sum=(a,k)=>a.reduce((v,o)=>v+o[k],0);
+    return{n:ms.length,dmg:sum(ms,'dmg')+sum(tms,'buffDmg'),heal:sum(ms,'heal')+sum(tms,'buffHeal'),tox:sum(ms,'tox')+sum(tms,'debuff')};
+  }
+  // 結果：lose / timeout / full（完全勝利）/ winButLost（戰鬥勝利但我方輸出低過友方）
+  outcome(){
+    if(this.over!=='win')return this.over;
+    const o=this.side('ours'),a=this.side('ally');
+    return a.n&&o.dmg<a.dmg?'winButLost':'full';
+  }
+}
+
+/* ================= UI ================= */
+const $=s=>document.querySelector(s);
+for(const k of['append','replaceChildren','prepend'])(o=>{Element.prototype[k]=function(...a){return o.apply(this,a.filter(x=>x!=null&&x!==false))}})(Element.prototype[k]);
+function h(tag,attrs={},...kids){const e=document.createElement(tag);for(const[k,v]of Object.entries(attrs||{})){if(k.startsWith('on'))e.addEventListener(k.slice(2),v);else if(k==='class')e.className=v;else if(k==='html')e.innerHTML=v;else if(k==='value')e.value=v;else if(k==='checked')e.checked=!!v;else if(v!==false&&v!=null)e.setAttribute(k,v===true?'':v)}for(const c of kids.flat()){if(c==null||c===false)continue;e.append(c.nodeType?c:document.createTextNode(c))}return e}
+let B=null,playing=false,last=0,tab='girl',selSlot='A',batchRes=null;
+
+function setPlaying(p){playing=p;$('#btnPlay').textContent=$('#mPlay').textContent=p?'⏸ 暫停':(B&&B.t>0&&!B.over?'▶ 繼續':'▶ 開始');if(p){last=performance.now();requestAnimationFrame(loop)}}
+function resetBattle(){setPlaying(false);B=new Battle(S,Math.random,{manual:S.control==='manual',wait:S.wait});batchRes=null;renderStage();updateUI();renderLog(true)}
+function changed(){save();resetBattle();if(tab==='girl')updatePreview();if(tab==='enemy')updateHpHelp()}
+function findMember(slot){for(const t of B.teams)for(const x of t.members)if(x.slot===slot)return{x,t};return null}
+function choose(slot,c){const f=findMember(slot);if(!f||!f.t.manual)return;f.x.choice=c||(f.x.choice==='atk'?'heal':'atk');updateUI()}
+function fireAll(){let any=false;B.teams.forEach(t=>{if(t.manual&&t.ready){B.fire(t);any=true}});if(any){flushEvents();updateUI();renderLog()}}
+
+function renderStage(){
+  const en=E();
+  $('#dBox').replaceChildren(
+    h('div',{class:'nm'},en.name||'（未命名病魔）'),
+    h('div',{class:'tags'},en.weak.map(w=>h('span',{class:'tag w'},'弱 '+w)),en.patho!=='無'?h('span',{class:'tag w'},'病性 '+en.patho):null),
+    h('div',{class:'tags'},h('span',{class:'tag l'},'病人嗜：'+(en.likes.join('、')||'—'))),
+    M().regen?h('div',{class:'sub'},`每秒自動回血 ${M().regen}%`):null);
+  const cards=SLOTS.map((s,i)=>{
+    const b=findMember(s),g=b?b.x.g:getGirl(s),usable=slotUsable(s);
+    const isAlly=i>=3&&!M().six;
+    const lead=(s==='A'||s==='D')&&(isAlly?S.leaderOn.ally:S.leaderOn.ours);
+    const c=h('div',{class:'card'+(isAlly?' ally':'')+(b?'':' off')+(s===selSlot?' sel':''),id:'card-'+s,onclick:()=>{selSlot=s;tab='girl';renderTabs();renderEditor();document.querySelectorAll('.card').forEach(e=>e.classList.toggle('sel',e.id==='card-'+s));if(isPhone()&&!playing)$('#tabs').scrollIntoView({behavior:'smooth'})}},
+      h('span',{class:'sl'},s));
+    if(!usable){c.append(h('div',{class:'note'},'此模式無此位'));return c}
+    if(!b){c.append(h('div',{class:'note'},'（空位）'));return c}
+    const man=b.t.manual;
+    c.append(h('div',{class:'nm'},lead?h('span',{class:'crown'},'♛ '):null,g.name),
+      h('div',{class:'rar'},'★'.repeat(S.rules.rarity[g.rarity].stars)+' ',h('span',{style:'color:var(--muted)'},g.rarity)),
+      h('div',{style:'color:var(--muted)'},`${g.nature}｜${g.flavors.join('')||'-'}｜${g.meridians.join('')||'-'}`),
+      S.rules.toxicOn&&g.toxic>0||g.detox?h('div',{},S.rules.toxicOn&&g.toxic>0?h('span',{class:'bad'},`毒${g.toxic}% `):null,g.detox?h('span',{class:'ok'},'解毒'):null):null,
+      h('div',{class:'stance'},['atk','heal'].map(k=>h('button',{class:k,'data-c':k,disabled:!man,title:man?'揀呢招':'自動出招',onclick:e=>{e.stopPropagation();choose(s,k)}},k==='atk'?'⚔ 攻':'✚ 回'))),
+      h('div',{class:'st'}));
+    c.title=(g.natureRaw?`原文：${g.natureRaw}｜歸經 ${g.meridians.join('、')}`:'')+(M().allyRandom&&isAlly?'\n隨機友方：每次重置重新抽':'');
+    return c;
+  });
+  $('#slots').replaceChildren(...cards.slice(0,3),h('div'),...cards.slice(3));
+  // CD 條
+  $('#cds').replaceChildren(...B.teams.map((t,ti)=>h('div',{class:'cd'+(t.side==='ally'?' ally':''),id:'cd-'+ti},
+    h('span',{title:t.scale>1?`星數門檻 ×${t.scale}（例：${15*t.scale}★ 先係 1 秒）`:''},`${t.label} CD ${fmt1(t.interval)}s（${t.stars}★${t.scale>1?' ／門檻×'+t.scale:''}）`),
+    h('div',{class:'bar'},h('i'),h('span')),
+    t.manual?h('button',{class:'fire',onclick:fireAll},'出招 (Space)'):h('span',{class:'note',style:'min-width:96px;margin:0'},'自動'))));
+  // 隊伍資訊
+  const yes=(b,t)=>h('span',{class:b?'ok':'no'},(b?'✓':'✗')+t+' ');
+  $('#teamInfo').replaceChildren(...B.teams.map(t=>h('div',{},
+    h('b',{},t.label+'：'),`隊長BUFF${t.leader?'':'(關)'} `,
+    yes(t.sameNature,'同藥性'),yes(t.commonFlavor.length,'同味'+(t.commonFlavor.length?'('+t.commonFlavor.join('')+')':'')),yes(t.commonMer.length,'歸經一致'+(t.commonMer.length?'('+t.commonMer.join('')+')':'')),
+    t.hasToxic?h('span',{class:t.toxicDebuff?'bad':'ok'},t.toxicDebuff?'⚠有毒無解毒':'有毒但有解毒'):null)));
+  const manTeams=B.teams.filter(t=>t.manual);
+  $('#hint').replaceChildren(manTeams.length&&isPhone()?h('span',{},'手動模式：撳卡上 ⚔攻 / ✚回 揀招，CD 滿咗撳底部「出招」。'+(S.wait?'揀招時時間會停。':'揀招期間時間照行。')+'（戰鬥中撳卡唔會跳去編輯）'):manTeams.length?h('span',{},'手動模式：撳卡上 ⚔攻 / ✚回 揀招（或按 ',h('kbd',{},'1'),'–',h('kbd',{},String(manTeams.reduce((n,t)=>Math.max(n,SLOTS.indexOf(t.members[t.members.length-1].slot)+1),1))),' 切換），CD 滿咗撳「出招」或 ',h('kbd',{},'Space'),'。'+(S.wait?'揀招時時間會停。':'揀招期間時間照行，病人照扣血。')):h('span',{},'自動模式：每位少女用「預設行動」，病人血低過 '+S.rules.autoHealBelow+'% 會自動派回復最強嗰位去補。'));
+}
+function decayText(d){return d?`病人流失：每 ${d.per} 秒 -${d.pct}%`:'病人不再流失'}
+function updateUI(){
+  const pp=Math.max(0,B.pHp),ep=B.ePct();
+  $('#pBar i').style.width=pp+'%';$('#pBar i').style.background=pp>50?'var(--green)':pp>25?'#d9a320':'var(--red)';
+  $('#pBar span').textContent=`病人生命 ${fmt1(pp)}%`;
+  $('#rateTxt').textContent=decayText(B.decay())+(B.waiting()?'　⏸ 等你出招':'');
+  $('#eBar i').style.width=ep+'%';
+  $('#eTxt').textContent=`病魔生命 ${fmt(B.eHp)} / ${fmt(B.eMax)}（${fmt1(ep)}%）`;
+  $('#clock').textContent=`時間 ${B.t.toFixed(1)}s`;
+  B.teams.forEach((t,ti)=>{
+    const cd=document.getElementById('cd-'+ti);
+    if(cd){cd.classList.toggle('ready',t.ready);cd.querySelector('.bar i').style.width=(t.ready?100:Math.min(100,t.timer/t.interval*100))+'%';cd.querySelector('.bar span').textContent=t.ready?'準備好！':'';const f=cd.querySelector('.fire');if(f)f.disabled=!t.ready||!!B.over}
+    t.members.forEach(x=>{
+      const c=document.getElementById('card-'+x.slot);if(!c)return;
+      c.querySelector('.st').textContent=`傷 ${fmt(x.dmg)}｜補 ${fmt1(x.heal)}%`;
+      c.querySelectorAll('.stance button').forEach(b=>b.classList.toggle('on',b.dataset.c===x.choice));
+    });
+  });
+  const man=B.teams.some(t=>t.manual),rdy=B.teams.some(t=>t.manual&&t.ready)&&!B.over,mf=$('#mFire');
+  mf.disabled=!rdy;mf.classList.toggle('ready',rdy);mf.textContent=man?(rdy?'⚔ 出招！':'出招（CD 中）'):'自動出招中';
+  renderStats();
+  const r=$('#result');
+  if(B.over){
+    const o=B.side('ours'),a=B.side('ally'),oc=B.outcome();
+    const T={full:['完全勝利！','var(--gold)'],winButLost:['戰鬥勝利・但我方失敗','var(--ally)'],lose:['戰鬥失敗','var(--red)'],timeout:['超時','var(--red)']}[oc];
+    r.replaceChildren(h('b',{style:`color:${T[1]}`},T[0]),
+      h('div',{},`用時 ${B.t.toFixed(1)} 秒｜病人剩 ${fmt1(B.pHp)}%`),
+      a.n?h('div',{},`輸出比拼（只計傷害）：我方 ${fmt(o.dmg)} vs 友方 ${fmt(a.dmg)}`):null,
+      oc==='winButLost'?h('div',{class:'note'},'病人救返，但我方輸出低過友方'):null,
+      h('div',{},h('button',{onclick:resetBattle},'再嚟一次')));
+    r.hidden=false;
+  }else r.hidden=true;
+}
+function renderStats(){
+  const rows=[];
+  B.teams.forEach(t=>{t.members.forEach(x=>rows.push(h('tr',{},h('td',{},x.slot),h('td',{},x.g.name+' ',h('span',{style:'color:var(--muted)'},x.g.rarity)),h('td',{},x.atkN),h('td',{},fmt(x.dmg)),h('td',{},x.healN),h('td',{},fmt1(x.heal)+'%'),h('td',{},x.tox?fmt1(x.tox)+'%':'-'))));
+    if(t.buffDmg||t.buffHeal||t.debuff)rows.push(h('tr',{},h('td',{},''),h('td',{},t.label+' 隊伍BUFF/DEBUFF'),h('td',{}),h('td',{},t.buffDmg?fmt(t.buffDmg):'-'),h('td',{}),h('td',{},t.buffHeal?fmt1(t.buffHeal)+'%':'-'),h('td',{},t.debuff?fmt1(t.debuff)+'%':'-')))});
+  const o=B.side('ours'),a=B.side('ally');
+  rows.push(h('tr',{class:'tot'},h('td',{}),h('td',{},'我方合計'),h('td',{}),h('td',{},fmt(o.dmg)),h('td',{}),h('td',{},fmt1(o.heal)+'%'),h('td',{},o.tox?fmt1(o.tox)+'%':'-')));
+  if(a.n)rows.push(h('tr',{class:'tot'},h('td',{}),h('td',{},'友方合計'),h('td',{}),h('td',{},fmt(a.dmg)),h('td',{}),h('td',{},fmt1(a.heal)+'%'),h('td',{},a.tox?fmt1(a.tox)+'%':'-')));
+  const kids=[h('table',{},h('tr',{},['位','少女','攻次','總傷害','回次','有效回復','毒傷病人'].map(x=>h('th',{},x))),rows)];
+  if(a.n){const tot=o.dmg+a.dmg||1;kids.push(h('div',{class:'vs'},h('div',{style:`width:${o.dmg/tot*100}%;background:#2d5bd1`},`我方 ${fmt1(o.dmg/tot*100)}%`),h('div',{style:`width:${a.dmg/tot*100}%;background:#7a4fc4`},`友方 ${fmt1(a.dmg/tot*100)}%`)))}
+  if(batchRes)kids.push(batchRes);
+  $('#stats').replaceChildren(...kids);
+}
+let logShown=0;
+const logLine=l=>`${l.t.toFixed(1).padStart(6)}s  ${l.text}`;
+/* ================= 戰報 ================= */
+function buildReport(b){
+  const R=b.R,M=b.M,en=b.E,L=[];
+  const pad=(s,n)=>String(s)+' '.repeat(Math.max(0,n-[...String(s)].reduce((w,c)=>w+(c.charCodeAt(0)>255?2:1),0)));
+  const now=new Date();
+  L.push('===== 草藥少女戰報 =====',`時間：${now.toLocaleString()}`);
+  L.push(`模式：${M.label}｜我方操作：${b.manual?'手動'+(b.wait?'（揀招時暫停）':'（時間照行）'):'自動'}`);
+  L.push(`病魔：${en.name}｜生命 ${fmt(b.eMax)}｜弱點 ${en.weak.join('、')||'無'}｜病性 ${en.patho}｜病人嗜 ${en.likes.join('、')||'無'}｜每秒回血 ${M.regen}%`);
+  L.push('病人流失：'+M.decay.map(d=>`病魔>${d.above}% 每${d.per}秒-${d.pct}%`).join('；'));
+  L.push(`公式：無弱點${R.baseDmg}／每弱點${R.weakDmg}${R.natureAsWeak?'（藥性對症算弱點）':''}｜回復 每味${R.healPerFlavor}% 對症${R.natureHeal}%${R.rarityOnHeal?'（含稀有度）':''}`);
+  L.push(`BUFF：同藥性 攻+${R.buffAtk}%｜同味 病人+${R.buffHeal}%/回合｜歸經一致 病魔-${R.buffDmg}%（一次）｜毒性${R.toxicOn?'開，有毒無解毒 病人-'+R.toxicDebuff+'%/回合':'關'}`);
+  if(!b.manual||b.teams.some(t=>!t.manual))L.push(`自動出招：病人<${R.autoHealBelow}% 派回復最強嗰位補血`);
+  for(const t of b.teams){
+    L.push('',`【${t.label}】${t.members.length}人 ${t.stars}★${t.scale>1?'（門檻×'+t.scale+'）':''} → CD ${fmt1(t.interval)}s｜${t.manual?'手動':'自動'}｜隊長BUFF${t.leader?'':'(關)'}：同藥性${t.sameNature?'✓':'✗'} 同味${t.commonFlavor.length?'✓('+t.commonFlavor.join('')+')':'✗'} 歸經一致${t.commonMer.length?'✓('+t.commonMer.join('')+')':'✗'}${t.hasToxic?(t.toxicDebuff?'｜⚠有毒無解毒':'｜有毒但有解毒'):''}`);
+    for(const x of t.members){const g=x.g,a=calcAtk(g,en,R,t.atkBuff),hl=calcHeal(g,en,R);
+      L.push(`  ${x.slot} ${g.name} ${g.rarity}｜${g.nature}｜${g.flavors.join('')||'-'}｜${g.meridians.join('')||'-'}｜預設${ACT[g.stance]}｜攻${fmt(a.dmg)}${a.hits.length?'(中'+a.hits.join('')+')':''} 回${fmt1(hl.heal)}%${g.toxic&&R.toxicOn?'｜毒'+g.toxic+'%':''}${g.detox?'｜解毒':''}`)}
+  }
+  L.push('','----- 戰鬥過程 -----',...b.log.map(logLine));
+  L.push('','----- 結果 -----');
+  if(!b.over)L.push(`（戰鬥未完，${b.t.toFixed(1)} 秒）`);
+  else L.push(`${{full:'完全勝利',winButLost:'戰鬥勝利・但我方失敗',lose:'戰鬥失敗',timeout:'超時'}[b.outcome()]}｜用時 ${b.t.toFixed(1)}s`);
+  L.push(`病人 ${fmt1(b.pHp)}%｜病魔 ${fmt(b.eHp)}/${fmt(b.eMax)}`);
+  L.push(pad('位 少女',22)+pad('攻次',6)+pad('傷害',9)+pad('回次',6)+pad('有效回復',10)+'毒傷');
+  for(const t of b.teams){for(const x of t.members)L.push(pad(`${x.slot} ${x.g.name}`,22)+pad(x.atkN,6)+pad(fmt(x.dmg),9)+pad(x.healN,6)+pad(fmt1(x.heal)+'%',10)+(x.tox?fmt1(x.tox)+'%':'-'));
+    if(t.buffDmg||t.buffHeal||t.debuff)L.push(pad(`  ${t.label}BUFF/DEBUFF`,22)+pad('',6)+pad(t.buffDmg?fmt(t.buffDmg):'-',9)+pad('',6)+pad(t.buffHeal?fmt1(t.buffHeal)+'%':'-',10)+(t.debuff?fmt1(t.debuff)+'%':'-'))}
+  const o=b.side('ours'),a=b.side('ally');
+  L.push(`我方合計：傷害 ${fmt(o.dmg)}｜回復 ${fmt1(o.heal)}%｜毒傷 ${fmt1(o.tox)}%`);
+  if(a.n)L.push(`友方合計：傷害 ${fmt(a.dmg)}｜回復 ${fmt1(a.heal)}%｜毒傷 ${fmt1(a.tox)}%`,`輸出比拼：我方 ${fmt1(o.dmg/((o.dmg+a.dmg)||1)*100)}% vs 友方 ${fmt1(a.dmg/((o.dmg+a.dmg)||1)*100)}%`);
+  return L.join('\n');
+}
+function copyText(t){
+  const fallback=()=>{const ta=h('textarea',{style:'position:fixed;opacity:0'});ta.value=t;document.body.append(ta);ta.select();let ok=false;try{ok=document.execCommand('copy')}catch(e){}ta.remove();return ok};
+  return navigator.clipboard?navigator.clipboard.writeText(t).then(()=>true,fallback):Promise.resolve(fallback());
+}
+function renderLog(reset){
+  const el=$('#log');if(reset){el.replaceChildren();logShown=0}
+  const atBottom=el.scrollTop+el.clientHeight>=el.scrollHeight-30;
+  const frag=document.createDocumentFragment();
+  for(;logShown<B.log.length;logShown++)frag.append(h('div',{class:B.log[logShown].side},logLine(B.log[logShown])));
+  el.append(frag);
+  while(el.childNodes.length>600)el.firstChild.remove();
+  if(atBottom)el.scrollTop=el.scrollHeight;
+}
+function flushEvents(){
+  const sp=+$('#speedSel').value,ev=B.events.splice(0);
+  if(sp>5)return;
+  for(const e of ev.slice(-12)){
+    const c=document.getElementById('card-'+e.slot);if(!c)continue;
+    const f=h('div',{class:'float '+e.type,style:`margin-left:${(Math.random()*30-15)|0}px`},e.type==='atk'?'-'+fmt(e.val):e.type==='heal'?'+'+fmt1(e.val)+'%':'☠-'+fmt1(e.val)+'%');
+    c.append(f);setTimeout(()=>f.remove(),900);
+    c.classList.add('act');setTimeout(()=>c.classList.remove('act'),180);
+  }
+}
+function loop(ts){
+  if(!playing)return;
+  const real=Math.min(.1,(ts-last)/1000);last=ts;
+  let sim=real*+$('#speedSel').value;
+  while(sim>1e-9&&!B.over&&!B.waiting()){const d=Math.min(DT,sim);B.step(d);sim-=d}
+  flushEvents();updateUI();renderLog();
+  if(B.over)setPlaying(false);else requestAnimationFrame(loop);
+}
+document.addEventListener('keydown',e=>{
+  if(/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)||!B)return;
+  if(e.code==='Space'){e.preventDefault();fireAll()}
+  const n=+e.key;if(n>=1&&n<=6){choose(SLOTS[n-1])}
+});
+
+/* ================= 編輯器 ================= */
+const TABS=[['girl','少女'],['enemy','病魔/病人'],['mode','模式參數'],['rules','公式參數'],['lib','草藥圖鑑']];
+function renderTabs(){$('#tabs').replaceChildren(...TABS.map(([k,l])=>h('button',{class:tab===k?'on':'',onclick:()=>{tab=k;renderTabs();renderEditor()}},l)))}
+function field(label,...ctrl){return h('div',{class:'f'},h('span',{},label),...ctrl)}
+function num(get,set,step=1,w){return h('input',{type:'number',step,value:get(),style:w?`width:${w}px`:null,onchange:e=>{set(+e.target.value);changed()}})}
+function sel(opts,get,set){return h('select',{onchange:e=>{set(e.target.value);changed()}},opts.map(o=>{const[v,l]=Array.isArray(o)?o:[o,o];return h('option',{value:v,selected:v===get()},l)}))}
+function chk(get,set,label){return h('label',{},h('input',{type:'checkbox',checked:get(),onchange:e=>{set(e.target.checked);changed()}}),' '+(label||''))}
+function chips(opts,arr){return h('div',{class:'chips'},opts.map(o=>h('button',{type:'button',class:'chip'+(arr.includes(o)?' on':''),onclick:e=>{const i=arr.indexOf(o);i>=0?arr.splice(i,1):arr.push(o);e.currentTarget.classList.toggle('on');changed()}},o)))}
+
+function renderEditor(){$('#editor').replaceChildren(...({girl:edGirl,enemy:edEnemy,mode:edMode,rules:edRules,lib:edLib}[tab])())}
+function edGirl(){
+  const s=selSlot,out=[h('div',{class:'f'},h('span',{},'選擇位置'),h('div',{class:'chips'},SLOTS.map(x=>h('button',{class:'chip'+(x===s?' on':''),onclick:()=>{selSlot=x;renderEditor();renderStage();updateUI()}},x))))];
+  if(!slotUsable(s))return[...out,h('div',{class:'note'},'呢個模式冇呢個位。')];
+  const isAlly=SLOTS.indexOf(s)>=3&&!M().six;
+  out.push(h('div',{class:'note'},isAlly?'友方隊伍（D 為友方隊長位，友方永遠自動出招）':(M().six?'我方 6 人隊（A 為隊長位）':'我方隊伍（A 為隊長位）')));
+  if(isAlly&&M().allyRandom)out.push(h('div',{class:'note',style:'color:var(--gold)'},'⚠ 此模式友方係「每場由圖鑑隨機抽」，下面設定唔會用到。可去「模式參數」關閉隨機。'));
+  let g=getGirl(s);if(!g){g=EMPTY();setGirl(s,g)}
+  out.push(
+    field('從圖鑑載入',h('input',{list:'herbList',placeholder:'打藥名搜尋…',style:'width:170px',onchange:e=>{const f=findHerb(e.target.value.trim());if(!f)return;const c=clone(f);delete c.custom;setGirl(s,c);changed();renderEditor()}}),
+      h('button',{onclick:()=>{setGirl(s,EMPTY());changed();renderEditor()}},'清空此位')),
+    g.natureRaw?h('div',{class:'note'},`資料庫原文：${g.natureRaw}｜${g.primary||''}・${g.secondary||''}`):null,
+    field('名稱',h('input',{value:g.name,onchange:e=>{g.name=e.target.value.trim();changed()}})),
+    field('稀有度',sel(RARITIES.map(r=>[r,`${r}（${S.rules.rarity[r].stars}★ ${S.rules.rarity[r].mod>=0?'+':''}${S.rules.rarity[r].mod}%）`]),()=>g.rarity,v=>g.rarity=v)),
+    field('藥性（性）',sel(NATURES,()=>g.nature,v=>g.nature=v)),
+    field('藥味（味）',chips(FLAVORS,g.flavors)),
+    field('歸經',chips(ALL_MER,g.meridians)),
+    field('預設行動',sel([['atk','⚔ 攻擊'],['heal','✚ 回復']],()=>g.stance,v=>g.stance=v),h('span',{class:'note'},'自動模式／友方用；手動模式係開場預選')),
+    field('毒性',num(()=>g.toxic,v=>g.toxic=v,1,70),h('span',{class:'note'},'每次攻擊病人 -%')),
+    field('解毒',chk(()=>g.detox,v=>g.detox=v,'具解毒能力')),
+    h('div',{class:'preview',id:'preview'}),
+    h('div',{class:'f'},h('button',{onclick:()=>{if(!g.name)return alert('請先改名');const i=S.library.findIndex(l=>l.name===g.name);i>=0?S.library[i]=clone(g):S.library.push(clone(g));save();alert('已存入圖鑑：'+g.name)}},'存入圖鑑'),
+      (s==='A'||s==='D')?chk(()=>isAlly?S.leaderOn.ally:S.leaderOn.ours,v=>{isAlly?S.leaderOn.ally=v:S.leaderOn.ours=v},'啟用此隊隊長BUFF'):null));
+  setTimeout(updatePreview);
+  return out;
+}
+function updatePreview(){
+  const p=document.getElementById('preview');if(!p)return;
+  const g=getGirl(selSlot);if(!g||!g.name){p.textContent='（空位）';return}
+  const en=E(),R=S.rules,f=findMember(selSlot),tm=f&&f.t;
+  const a=calcAtk(g,en,R,tm?tm.atkBuff:0),hl=calcHeal(g,en,R);
+  p.replaceChildren(h('div',{},h('b',{},'對「'+en.name+'」預覽')),
+    h('div',{},`⚔ 攻擊：${fmt(a.dmg)}　（${a.hits.length?'命中 '+a.hits.join('、'):'無命中弱點'}${R.natureAsWeak&&a.ctr?'＋藥性對症':''} → 基礎 ${a.base}，稀有度 ${R.rarity[g.rarity].mod}%${tm&&tm.atkBuff?`，同藥性 +${tm.atkBuff}%`:''}）`),
+    h('div',{},`✚ 回復：${fmt1(hl.heal)}%　（合口味 ${hl.fl.join('、')||'無'}${hl.ctr?'，藥性對症 +'+R.natureHeal+'%':''}）`),
+    tm?h('div',{class:'note'},`所屬隊伍 CD ${fmt1(tm.interval)} 秒`):null);
+}
+function participants(){return B.teams.reduce((n,t)=>n+t.members.length,0)}
+function updateHpHelp(){
+  const el=document.getElementById('hpHelp');if(!el)return;
+  const R=S.rules,n=participants(),rounds=S.hpRounds,en=E();
+  const sug=n*R.weakDmg*rounds;
+  const per=B.teams.reduce((v,t)=>v+t.members.reduce((w,x)=>w+calcAtk(x.g,en,R,t.atkBuff).dmg,0),0);
+  const est=per*rounds;
+  const apply=v=>h('button',{onclick:()=>{en.maxHp=Math.round(v);changed();renderEditor()}},'套用');
+  el.replaceChildren(
+    h('div',{},`公式建議：${n} 人 × ${R.weakDmg}（中弱點）× ${rounds} 回合 = `,h('b',{},fmt(sug)),' ',apply(sug)),
+    h('div',{},`按現陣容全部攻擊估算：每回合 ${fmt(per)} × ${rounds} 回合 = `,h('b',{},fmt(est)),' ',apply(est)),
+    h('div',{class:'note'},'「回合」係全體各出一招計；未計回血回合、隊長BUFF 同病魔回血。'));
+}
+function edEnemy(){
+  const en=E();
+  setTimeout(updateHpHelp);
+  return[h('div',{class:'note'},`目前模式：${M().label}（每個模式有自己嘅病魔）`),
+    field('名稱',h('input',{value:en.name,onchange:e=>{en.name=e.target.value;changed()}})),
+    field('病魔生命',num(()=>en.maxHp,v=>en.maxHp=v,100,100)),
+    field('目標捱幾多回合',num(()=>S.hpRounds,v=>S.hpRounds=v,1,60)),
+    h('div',{class:'preview',id:'hpHelp'}),
+    field('弱點（臟腑）',chips(MERIDIANS,en.weak)),
+    field('病性',sel(PATHOS,()=>en.patho,v=>en.patho=v),h('span',{class:'note'},'熱病←寒/涼藥對症；寒病←溫/熱藥對症')),
+    field('病人嗜（味）',chips(FLAVORS,en.likes)),
+    h('div',{class:'note'},'範例（你草稿）：弱 心 肺 熱、病人嗜 甜 苦 → SR人參 攻擊 200、回復 5%。')];
+}
+function edMode(){
+  const m=M();
+  const rows=m.decay.map((d,i)=>h('tr',{},h('td',{},'病魔 > ',num(()=>d.above,v=>d.above=v,1,60),'%'),h('td',{},'每 ',num(()=>d.per,v=>d.per=v,.5,60),' 秒'),h('td',{},'病人 -',num(()=>d.pct,v=>d.pct=v,.5,60),'%'),h('td',{},h('button',{onclick:()=>{m.decay.splice(i,1);changed();renderEditor()}},'✕'))));
+  return[h('div',{class:'note'},`編輯：${m.label}`),
+    h('h4',{},'病人生命流失（按病魔剩餘血量）'),
+    h('table',{class:'mini'},rows),h('button',{onclick:()=>{m.decay.push({above:0,pct:1,per:10});changed();renderEditor()}},'+ 加一行'),
+    h('h4',{},'其他'),
+    field('病魔每秒回血',num(()=>m.regen,v=>m.regen=v,.5,70),'%'),
+    field('星數門檻倍數',num(()=>m.starScale||1,v=>m.starScale=v,1,60),h('span',{class:'note'},'CD 表嘅星數 × 呢個數（6 人隊用 2）')),
+    !m.six?field('友方人數',sel(['0','1','2','3'],()=>String(m.ally),v=>{m.ally=+v;renderEditor()})):h('div',{class:'note'},'此模式：A–F 6 人同一隊，共用一條 CD，A 係隊長。'),
+    !m.six?field('友方隨機',chk(()=>m.allyRandom,v=>m.allyRandom=v,'每場由圖鑑隨機抽友方')):null];
+}
+function edRules(){
+  const R=S.rules;
+  return[h('h4',{},'攻擊'),
+    field('無弱點攻擊',num(()=>R.baseDmg,v=>R.baseDmg=v,5)),
+    field('每個弱點',num(()=>R.weakDmg,v=>R.weakDmg=v,5),h('span',{class:'note'},'命中 n 個弱點 = n × 呢個數')),
+    field('藥性對症',chk(()=>R.natureAsWeak,v=>R.natureAsWeak=v,'藥性對症都算一個攻擊弱點')),
+    h('h4',{},'回復病人'),
+    field('每個合口味',num(()=>R.healPerFlavor,v=>R.healPerFlavor=v,.5),'%'),
+    field('藥性對症',num(()=>R.natureHeal,v=>R.natureHeal=v,.5),'%'),
+    field('稀有度',chk(()=>R.rarityOnHeal,v=>R.rarityOnHeal=v,'稀有度加減都影響回復')),
+    h('h4',{},'稀有度'),
+    h('table',{class:'mini'},RARITIES.map(r=>h('tr',{},h('td',{},r),h('td',{},num(()=>R.rarity[r].stars,v=>R.rarity[r].stars=v,1,50),' 星'),h('td',{},num(()=>R.rarity[r].mod,v=>R.rarity[r].mod=v,1,60),' %')))),
+    h('h4',{},'隊伍 CD（按隊伍總星數）'),
+    field('計法',sel([['step','分段（達到幾多星就用嗰個）'],['linear','線性插值']],()=>R.intervalMode,v=>R.intervalMode=v)),
+    h('table',{class:'mini'},R.interval.map(row=>h('tr',{},h('td',{},'總星 ',num(()=>row[0],v=>row[0]=v,1,50)),h('td',{},'→ CD ',num(()=>row[1],v=>row[1]=v,.1,60),' 秒')))),
+    field('開場',chk(()=>R.firstAt0,v=>R.firstAt0=v,'開場 CD 已滿（即刻可以出第一招）')),
+    h('h4',{},'隊長BUFF / DEBUFF'),
+    field('同藥性',num(()=>R.buffAtk,v=>R.buffAtk=v,1),'% 攻擊'),
+    field('同味',num(()=>R.buffHeal,v=>R.buffHeal=v,1),'% 病人血／回合'),
+    field('歸經一致',num(()=>R.buffDmg,v=>R.buffDmg=v,1),'% 病魔最大血（第一回合一次性）'),
+    field('毒性',chk(()=>R.toxicOn,v=>R.toxicOn=v,'啟用毒性（攻擊毒傷＋有毒無解毒DEBUFF）')),
+    field('有毒無解毒',num(()=>R.toxicDebuff,v=>R.toxicDebuff=v,1),'% 病人血／回合'),
+    h('h4',{},'自動出招（友方、自動模式、即時結算、批量模擬）'),
+    field('補血門檻',num(()=>R.autoHealBelow,v=>R.autoHealBelow=v,5),'% 病人血低過呢個就派一位去回復（0 = 唔理）'),
+    h('h4',{},'其他'),
+    field('時間上限',num(()=>R.maxTime,v=>R.maxTime=v,10),'秒')];
+}
+const LF={q:'',rarity:'',primary:'',secondary:'',weakOnly:false};
+function edLib(){
+  const lib=allLib(),uniq=k=>[...new Set(HERBS.map(g=>g[k]).filter(Boolean))];
+  const list=h('div',{class:'lib'}),cnt=h('div',{class:'note'});
+  const draw=()=>{
+    const en=E(),targets=SLOTS.filter(slotUsable);
+    const res=lib.filter(g=>(!LF.q||g.name.includes(LF.q))&&(!LF.rarity||g.rarity===LF.rarity)&&(!LF.primary||g.primary===LF.primary)&&(!LF.secondary||g.secondary===LF.secondary)&&(!LF.weakOnly||g.meridians.some(m=>en.weak.includes(m))));
+    cnt.textContent=`符合 ${res.length} 種${res.length>80?'（只顯示頭 80 種，請再收窄搜尋）':''}`;
+    list.replaceChildren(...res.slice(0,80).flatMap(g=>{
+      const hit=g.meridians.filter(m=>en.weak.includes(m));
+      return[h('div',{title:g.natureRaw||''},h('b',{},g.name),g.custom?h('span',{class:'tag l',style:'margin-left:4px'},'自訂'):null,` ${g.rarity}｜${g.nature}｜${g.flavors.join('')}｜${g.meridians.join('')}`,hit.length?h('span',{class:'bad'},` ⚔${hit.length}`):null,g.toxic?h('span',{class:'bad'},` 毒${g.toxic}%`):null,g.detox?h('span',{class:'ok'},' 解毒'):null),
+        h('div',{class:'btns'},targets.map(s=>h('button',{onclick:()=>{const c=clone(g);delete c.custom;setGirl(s,c);changed()}},s)),
+          g.custom?h('button',{title:HERBS.some(x=>x.name===g.name)?'刪除自訂版，還原資料庫版本':'刪除',onclick:()=>{if(confirm('刪除自訂 '+g.name+'？')){S.library=S.library.filter(x=>x.name!==g.name);save();renderEditor()}}},'✕'):null)]}));
+  };
+  const opt=(k,vals,label)=>h('select',{onchange:e=>{LF[k]=e.target.value;draw()}},h('option',{value:''},label),vals.map(v=>h('option',{value:v,selected:LF[k]===v},v)));
+  setTimeout(draw);
+  return[h('div',{class:'note'},HERBS.length?`本草抽卡資料庫：${HERBS.length} 種（${DB_SRC}）＋ 自訂 ${S.library.length} 種。資料庫每次開頁重新讀，自訂／改過嘅會蓋過同名資料。`:h('span',{class:'bad'},'⚠ 讀唔到本草抽卡 medData.js，只有自訂少女。')),
+    h('div',{class:'f'},h('input',{placeholder:'搜尋藥名',value:LF.q,style:'width:120px',oninput:e=>{LF.q=e.target.value.trim();draw()}}),opt('rarity',RARITIES,'全部稀有度'),opt('primary',uniq('primary'),'全部類別'),opt('secondary',uniq('secondary'),'全部屬性'),
+      h('label',{},h('input',{type:'checkbox',checked:LF.weakOnly,onchange:e=>{LF.weakOnly=e.target.checked;draw()}}),' 只顯示打中而家病魔弱點')),
+    cnt,list,
+    h('div',{class:'note'},'匯入規則：味取「，」前（微苦→苦）；性取第二段（微寒→涼，平偏溫→平）；有小毒 3%、有毒 5%、有大毒 10%；甘草、綠豆當解毒。⚔n = 打中病魔幾多個弱點。')];
+}
+
+/* ================= 按鈕 ================= */
+function initHeader(){
+  $('#modeSel').replaceChildren(...Object.entries(S.modes).map(([k,m])=>h('option',{value:k,selected:k===S.mode},m.label)));
+  $('#modeSel').onchange=e=>{S.mode=e.target.value;if(!slotUsable(selSlot))selSlot='A';changed();renderEditor()};
+  $('#ctrlSel').value=S.control;$('#ctrlSel').onchange=e=>{S.control=e.target.value;changed()};
+  $('#waitChk').checked=S.wait;$('#waitChk').onchange=e=>{S.wait=e.target.checked;changed()};
+  $('#btnPlay').onclick=$('#mPlay').onclick=()=>{if(B.over)resetBattle();setPlaying(!playing)};
+  $('#btnReset').onclick=$('#mReset').onclick=resetBattle;
+  $('#mFire').onclick=fireAll;
+  $('#mInstant').onclick=()=>$('#btnInstant').click();
+  $('#btnInstant').onclick=()=>{setPlaying(false);B=new Battle(S).run();B.events=[];batchRes=null;renderStage();updateUI();renderLog(true)};
+  $('#btnBatch').onclick=()=>{
+    const N=100;let win=0,full=0,t=0,p=0,od=0,ad=0,hasAlly=false;
+    for(let i=0;i<N;i++){const b=new Battle(S).run();const o=b.side('ours'),a=b.side('ally'),oc=b.outcome();if(b.over==='win'){win++;t+=b.t;p+=b.pHp}if(oc==='full')full++;if(a.n)hasAlly=true;od+=o.dmg;ad+=a.dmg}
+    resetBattle();
+    batchRes=h('div',{class:'preview'},h('b',{},`🎲 自動模擬 ${N} 次結果`),
+      h('div',{},`戰鬥勝率 ${win}%｜平均用時 ${win?(t/win).toFixed(1):'-'}s｜勝利時病人平均剩 ${win?fmt1(p/win):'-'}%`),
+      hasAlly?h('div',{},`完全勝利（輸出 ≥ 友方）${full}%｜平均輸出 我方 ${fmt(od/N)} vs 友方 ${fmt(ad/N)}`):null,
+      M().allyRandom?h('div',{class:'note'},'友方每場隨機抽，所以結果會有變化'):h('div',{class:'note'},'冇隨機因素時每次結果一樣'));
+    renderStats();
+  };
+  $('#btnCopyRep').onclick=e=>{const btn=e.currentTarget;copyText(buildReport(B)).then(ok=>{btn.textContent=ok?'✓ 已複製':'複製失敗，請用下載';setTimeout(()=>btn.textContent='📋 複製戰報',1500)})};
+  $('#btnSaveRep').onclick=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');h('a',{href:URL.createObjectURL(new Blob([buildReport(B)],{type:'text/plain;charset=utf-8'})),download:`戰報_${M().label.replace(/[\\/:*?"<>|（）・ ]/g,'')}_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}.txt`}).click()};
+  $('#btnExport').onclick=()=>{const a=h('a',{href:URL.createObjectURL(new Blob([JSON.stringify(S,null,2)],{type:'application/json'})),download:'herb-battle-setup.json'});a.click()};
+  $('#btnImport').onclick=()=>$('#fileIn').click();
+  $('#fileIn').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const s=JSON.parse(await f.text());if(!s.rules||!s.modes)throw 0;S=adopt(s);save();initHeader();resetBattle();renderEditor()}catch(_){alert('JSON 格式唔啱')}e.target.value=''};
+  $('#btnDefault').onclick=()=>{if(confirm('還原全部預設？自訂數據會清除')){S=defaults();save();initHeader();resetBattle();renderEditor()}};
+}
+$('#dBox').onclick=()=>{tab='enemy';renderTabs();renderEditor();if(isPhone()&&!playing)$('#tabs').scrollIntoView({behavior:'smooth'})};
+function adminOK(){if(!HOSTED)return true;try{return sessionStorage.getItem(ADMIN_KEY)==='1'}catch(e){return false}}
+if(!adminOK()){
+  document.body.replaceChildren(h('div',{style:'max-width:420px;margin:18vh auto;padding:24px;text-align:center;border:1px solid #444;border-radius:12px;background:var(--panel)'},
+    h('div',{style:'font-size:40px'},'🔒'),h('h2',{style:'margin:8px 0'},'需要管理員模式'),
+    h('p',{class:'note',style:'font-size:14px'},'請返本草抽卡主頁，撳「🔐 管理員功能」輸入密碼，再撳「⚔️ 戰鬥模擬器」入嚟。'),
+    h('a',{href:'./',style:'color:var(--blue);font-size:16px'},'← 返回本草抽卡')));
+}else loadDB().then(()=>{
+  if(HOSTED)$('header h1').append(' ',h('a',{href:'./',style:'font-size:13px;color:var(--blue);font-weight:normal'},'← 返回抽卡'));
+  load();
+  for(const m of Object.values(S.modes))if(m.starScale==null)m.starScale=m.six?2:1;
+  document.body.append(h('datalist',{id:'herbList'},allLib().map(g=>h('option',{value:g.name},`${g.rarity} ${g.nature} ${g.meridians.join('')}`))));
+  initHeader();renderTabs();resetBattle();renderEditor();
+});
+</script>
+</body>
+</html>

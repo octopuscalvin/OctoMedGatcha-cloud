@@ -238,6 +238,7 @@
         <div class="admin-actions">
             <button class="reset-btn" onclick="resetGachaSave()">🔄 刪檔重刷</button>
             <button class="admin-btn" id="adminToggleBtn" onclick="toggleAdminMode()">🔐 管理員功能</button>
+            <button class="admin-btn" id="battleBtn" style="display:none" onclick="openBattleSim()">⚔️ 戰鬥模擬器</button>
             <button class="update-btn" onclick="forceUpdateApp()">📥 檢查更新</button>
             <button class="update-btn" onclick="window.open('admin.html', '_blank')">🗂️ 資料庫管理後台</button>
         </div>
@@ -613,6 +614,19 @@
 
         // ================== 管理員上帝模式 ==================
         let isAdminMode = false;
+        // 戰鬥模擬器 (battle.html) 靠呢個 sessionStorage 標記判斷係咪管理員模式
+        const ADMIN_KEY = 'octoMedAdmin';
+        function setAdminFlag(on) {
+            try { on ? sessionStorage.setItem(ADMIN_KEY, '1') : sessionStorage.removeItem(ADMIN_KEY); } catch (e) {}
+            document.getElementById('battleBtn').style.display = on ? '' : 'none';
+        }
+        setAdminFlag(false); // 每次開主頁都由非管理員開始
+
+        function openBattleSim() {
+            if (!isAdminMode) return;
+            setAdminFlag(true);
+            location.href = 'battle.html';
+        }
 
         function toggleAdminMode() {
             const adminBtn = document.getElementById('adminToggleBtn');
@@ -620,6 +634,7 @@
                 const pwd = prompt("請輸入管理員密碼以解鎖全圖鑑：");
                 if (pwd === "640480") {
                     isAdminMode = true;
+                    setAdminFlag(true);
                     adminBtn.innerText = "🔓 退出管理員";
                     adminBtn.classList.add('active-admin');
                     alert("✅ 密碼正確！管理員模式已啟動，所有圖鑑暫時解鎖。");
@@ -629,6 +644,7 @@
                 }
             } else {
                 isAdminMode = false;
+                setAdminFlag(false);
                 adminBtn.innerText = "🔐 管理員功能";
                 adminBtn.classList.remove('active-admin');
                 alert("🔒 已退出管理員模式，恢復原圖鑑收集進度。");
