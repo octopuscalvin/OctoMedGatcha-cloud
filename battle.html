@@ -216,6 +216,12 @@ const DETOX_GROUPS={
   '涼血解毒':['紫草','玄參','地榆','大黃','水牛角','犀角 (歷史用藥)','極品天然犀角 (歷史記載)','天然牛黃','人工牛黃','野生天然牛黃','純野生熊膽','黑市極品熊膽粉','豬膽汁','羚羊角','正品野生羚羊角']};
 const DETOX_TYPE=Object.fromEntries(Object.entries(DETOX_GROUPS).flatMap(([t,ns])=>ns.map(n=>[n,t])));
 const DETOX_ORDER=Object.keys(DETOX_GROUPS);
+// 毒／解毒三級：1 小、2 中、3 大。毒傷 = 毒性% × max(0, 毒級 − 解毒級) ÷ 毒級（解毒過頭都只係 0，唔會回血）
+const LV=['無','小','中','大'];
+const DETOX_LV_BY_TYPE={'解百藥毒':3,'解食物／藥物毒':2,'涼血解毒':2,'清熱解毒':1};
+const toxLv=g=>{const t=+g.toxic||0;return t>=10?3:t>=5?2:t>0?1:0};
+const detoxLv=g=>g.detox?(+g.detoxLv||DETOX_LV_BY_TYPE[g.detoxType||DETOX_TYPE[g.name]]||2):0;
+const toxDmg=(g,dl)=>{const p=toxLv(g);return p?(+g.toxic)*Math.max(0,p-dl)/p:0};
 // 放咗上網（本草抽卡 GitHub Pages 嘅 battle.html）就要管理員模式；本機 file:// 開唔使
 const HOSTED=/^https?:$/.test(location.protocol);
 const ADMIN_KEY='octoMedAdmin';
@@ -249,15 +255,15 @@ function fromMed(m){
   const tox=parts.slice(1).join('');
   const toxic=/大毒/.test(tox)?10:/小毒/.test(tox)?3:/毒/.test(tox)?5:0;
   const meridians=String(m.meridians||'').split(/[、，,\s]+/).filter(Boolean);
-  return{name:m.name,rarity:RARITIES.includes(m.rarity)?m.rarity:'N',nature,flavors,meridians,stance:'atk',toxic,detox:!toxic&&!!DETOX_TYPE[m.name],detoxType:toxic?undefined:DETOX_TYPE[m.name],
+  return{name:m.name,rarity:RARITIES.includes(m.rarity)?m.rarity:'N',nature,flavors,meridians,stance:'atk',toxic,detox:!toxic&&!!DETOX_TYPE[m.name],detoxType:toxic?undefined:DETOX_TYPE[m.name],detoxLv:toxic?0:DETOX_LV_BY_TYPE[DETOX_TYPE[m.name]]||0,
     natureRaw:m.nature,primary:m.primary,secondary:m.secondary};
 }
 function allLib(){const names=new Set(S.library.map(g=>g.name));return[...S.library.map(g=>Object.assign({custom:true},g)),...HERBS.filter(g=>!names.has(g.name))]}
 function findHerb(name){return allLib().find(g=>g.name===name)}
 // 解毒排先：解毒（按類型）→ 其餘；同組按稀有度高至低
 const RANK=g=>g.detox?DETOX_ORDER.indexOf(g.detoxType||'')+1||DETOX_ORDER.length+1:99;
-const detoxSort=(a,b)=>RANK(a)-RANK(b)||RARITIES.indexOf(b.rarity)-RARITIES.indexOf(a.rarity);
-const detoxLabel=g=>g.detox?'解毒'+(g.detoxType?'・'+g.detoxType:''):'';
+const detoxSort=(a,b)=>detoxLv(b)-detoxLv(a)||RANK(a)-RANK(b)||RARITIES.indexOf(b.rarity)-RARITIES.indexOf(a.rarity);
+const detoxLabel=g=>g.detox?LV[detoxLv(g)]+'解毒'+(g.detoxType?'・'+g.detoxType:''):'';
 function buildHerbList(){
   const dl=$('#herbList')||document.body.appendChild(h('datalist',{id:'herbList'}));
   dl.replaceChildren(...[...allLib()].sort(detoxSort).map(g=>h('option',{value:g.name},`${g.detox?'🛡'+detoxLabel(g)+' ':''}${g.rarity} ${g.nature} ${g.meridians.join('')}`)));
@@ -368,7 +374,7 @@ class Battle{
     tm.sameNature=lead&&gs.every(g=>g.nature===gs[0].nature);
     tm.commonFlavor=lead?inter(gs.map(g=>g.flavors)):[];
     tm.commonMer=lead?inter(gs.map(g=>g.meridians)):[];
-    tm.hasToxic=R.toxicOn&&gs.some(g=>+g.toxic>0);tm.hasDetox=gs.some(g=>g.detox);
+    tm.hasToxic=R.toxicOn&&gs.some(g=>+g.toxic>0);tm.hasDetox=gs.some(g=>g.detox);tm.detoxLv=Math.max(0,...gs.map(detoxLv));
     tm.toxicDebuff=tm.hasToxic&&!tm.hasDetox;
     tm.atkBuff=tm.sameNature?R.buffAtk:0;
     tm.manual=this.manual&&tm.side==='ours';
@@ -414,7 +420,11 @@ class Battle{
         const a=calcAtk(g,this.E,R,tm.atkBuff);
         this.eHp-=a.dmg;x.dmg+=a.dmg;x.atkN++;
         this.ev(x.slot,side,'atk',a.dmg,`${lbl} ${g.name} 攻擊 -${fmt(a.dmg)}`+(a.hits.length?`（命中 ${a.hits.join('、')}${R.natureAsWeak&&a.ctr?'＋藥性':''}）`:(a.n?'（藥性對症）':'（無弱點）')));
-        if(R.toxicOn&&+g.toxic>0){this.pHp-=+g.toxic;x.tox+=+g.toxic;this.ev(x.slot,side,'tox',+g.toxic,`　└ ${g.name} 毒性：病人 -${g.toxic}%`)}
+        if(R.toxicOn&&+g.toxic>0){
+          const td=toxDmg(g,tm.detoxLv),pl=LV[toxLv(g)]+'毒',dl=tm.detoxLv?`${LV[tm.detoxLv]}解毒`:'';
+          if(td>0){this.pHp-=td;x.tox+=td;this.ev(x.slot,side,'tox',td,`　└ ${g.name} 毒性：病人 -${fmt1(td)}%`+(dl?`（${pl}被${dl}減至 ${toxLv(g)-tm.detoxLv}/${toxLv(g)}）`:''))}
+          else this.log.push({t:this.t,side,text:`　└ ${g.name} ${pl}被${dl}完全化解（病人 -0%）`});
+        }
       }else{
         const hl=calcHeal(g,this.E,R);const before=this.pHp;this.pHp=Math.min(100,this.pHp+hl.heal);
         x.heal+=this.pHp-before;x.healN++;
@@ -482,7 +492,7 @@ function renderStage(){
     c.append(h('div',{class:'nm'},lead?h('span',{class:'crown'},'♛ '):null,g.name),
       h('div',{class:'rar'},'★'.repeat(S.rules.rarity[g.rarity].stars)+' ',h('span',{style:'color:var(--muted)'},g.rarity)),
       h('div',{style:'color:var(--muted)'},`${g.nature}｜${g.flavors.join('')||'-'}｜${g.meridians.join('')||'-'}`),
-      S.rules.toxicOn&&g.toxic>0||g.detox?h('div',{},S.rules.toxicOn&&g.toxic>0?h('span',{class:'bad'},`毒${g.toxic}% `):null,g.detox?h('span',{class:'ok'},'解毒'):null):null,
+      S.rules.toxicOn&&g.toxic>0||g.detox?h('div',{},S.rules.toxicOn&&g.toxic>0?h('span',{class:'bad'},`${LV[toxLv(g)]}毒${g.toxic}% `):null,g.detox?h('span',{class:'ok'},LV[detoxLv(g)]+'解毒'):null):null,
       h('div',{class:'stance'},['atk','heal'].map(k=>h('button',{class:k,'data-c':k,disabled:!man,title:man?'揀呢招':'自動出招',onclick:e=>{e.stopPropagation();choose(s,k)}},k==='atk'?'⚔ 攻':'✚ 回'))),
       h('div',{class:'st'}));
     c.title=(g.natureRaw?`原文：${g.natureRaw}｜歸經 ${g.meridians.join('、')}`:'')+(M().allyRandom&&isAlly?'\n隨機友方：每次重置重新抽':'');
@@ -499,7 +509,7 @@ function renderStage(){
   $('#teamInfo').replaceChildren(...B.teams.map(t=>h('div',{},
     h('b',{},t.label+'：'),`隊長BUFF${t.leader?'':'(關)'} `,
     yes(t.sameNature,'同藥性'),yes(t.commonFlavor.length,'同味'+(t.commonFlavor.length?'('+t.commonFlavor.join('')+')':'')),yes(t.commonMer.length,'歸經一致'+(t.commonMer.length?'('+t.commonMer.join('')+')':'')),
-    t.hasToxic?h('span',{class:t.toxicDebuff?'bad':'ok'},t.toxicDebuff?'⚠有毒無解毒':'有毒但有解毒'):null)));
+    t.hasToxic?h('span',{class:t.toxicDebuff?'bad':'ok'},t.toxicDebuff?'⚠有毒無解毒':`有毒・隊伍${LV[t.detoxLv]}解毒`):null)));
   const manTeams=B.teams.filter(t=>t.manual);
   $('#hint').replaceChildren(manTeams.length&&isPhone()?h('span',{},'手動模式：撳卡上 ⚔攻 / ✚回 揀招，CD 滿咗撳底部「出招」。'+(S.wait?'揀招時時間會停。':'揀招期間時間照行。')+'（戰鬥中撳卡唔會跳去編輯）'):manTeams.length?h('span',{},'手動模式：撳卡上 ⚔攻 / ✚回 揀招（或按 ',h('kbd',{},'1'),'–',h('kbd',{},String(manTeams.reduce((n,t)=>Math.max(n,SLOTS.indexOf(t.members[t.members.length-1].slot)+1),1))),' 切換），CD 滿咗撳「出招」或 ',h('kbd',{},'Space'),'。'+(S.wait?'揀招時時間會停。':'揀招期間時間照行，病人照扣血。')):h('span',{},'自動模式：每位少女用「預設行動」，病人血低過 '+S.rules.autoHealBelow+'% 會自動派回復最強嗰位去補。'));
 }
@@ -559,13 +569,13 @@ function buildReport(b){
   L.push(`模式：${M.label}｜我方操作：${b.manual?'手動'+(b.wait?'（揀招時暫停）':'（時間照行）'):'自動'}`);
   L.push(`病魔：${en.name}｜生命 ${fmt(b.eMax)}｜弱點 ${en.weak.join('、')||'無'}｜病性 ${en.patho}｜病人嗜 ${en.likes.join('、')||'無'}｜每秒回血 ${M.regen}%`);
   L.push('病人流失：'+M.decay.map(d=>`病魔>${d.above}% 每${d.per}秒-${d.pct}%`).join('；'));
-  L.push(`公式：無弱點${R.baseDmg}／每弱點${R.weakDmg}${R.natureAsWeak?'（藥性對症算弱點）':''}｜回復 每味${R.healPerFlavor}% 對症${R.natureHeal}%${R.rarityOnHeal?'（含稀有度）':''}`);
+  L.push(`公式：無弱點${R.baseDmg}／每弱點${R.weakDmg}${R.natureAsWeak?'（藥性對症算弱點）':''}｜回復 每味${R.healPerFlavor}% 對症${R.natureHeal}%${R.rarityOnHeal?'（含稀有度）':''}｜毒傷 = 毒性 ×(毒級−隊伍最高解毒級)/毒級，最低 0`);
   L.push(`BUFF：同藥性 攻+${R.buffAtk}%｜同味 病人+${R.buffHeal}%/回合｜歸經一致 病魔-${R.buffDmg}%（一次）｜毒性${R.toxicOn?'開，有毒無解毒 病人-'+R.toxicDebuff+'%/回合':'關'}`);
   if(!b.manual||b.teams.some(t=>!t.manual))L.push(`自動出招：病人<${R.autoHealBelow}% 派回復最強嗰位補血`);
   for(const t of b.teams){
-    L.push('',`【${t.label}】${t.members.length}人 ${t.stars}★${t.scale>1?'（門檻×'+t.scale+'）':''} → CD ${fmt1(t.interval)}s｜${t.manual?'手動':'自動'}｜隊長BUFF${t.leader?'':'(關)'}：同藥性${t.sameNature?'✓':'✗'} 同味${t.commonFlavor.length?'✓('+t.commonFlavor.join('')+')':'✗'} 歸經一致${t.commonMer.length?'✓('+t.commonMer.join('')+')':'✗'}${t.hasToxic?(t.toxicDebuff?'｜⚠有毒無解毒':'｜有毒但有解毒'):''}`);
+    L.push('',`【${t.label}】${t.members.length}人 ${t.stars}★${t.scale>1?'（門檻×'+t.scale+'）':''} → CD ${fmt1(t.interval)}s｜${t.manual?'手動':'自動'}｜隊長BUFF${t.leader?'':'(關)'}：同藥性${t.sameNature?'✓':'✗'} 同味${t.commonFlavor.length?'✓('+t.commonFlavor.join('')+')':'✗'} 歸經一致${t.commonMer.length?'✓('+t.commonMer.join('')+')':'✗'}${t.hasToxic?(t.toxicDebuff?'｜⚠有毒無解毒':`｜有毒・隊伍${LV[t.detoxLv]}解毒`):''}`);
     for(const x of t.members){const g=x.g,a=calcAtk(g,en,R,t.atkBuff),hl=calcHeal(g,en,R);
-      L.push(`  ${x.slot} ${g.name} ${g.rarity}｜${g.nature}｜${g.flavors.join('')||'-'}｜${g.meridians.join('')||'-'}｜預設${ACT[g.stance]}｜攻${fmt(a.dmg)}${a.hits.length?'(中'+a.hits.join('')+')':''} 回${fmt1(hl.heal)}%${g.toxic&&R.toxicOn?'｜毒'+g.toxic+'%':''}${g.detox?'｜解毒':''}`)}
+      L.push(`  ${x.slot} ${g.name} ${g.rarity}｜${g.nature}｜${g.flavors.join('')||'-'}｜${g.meridians.join('')||'-'}｜預設${ACT[g.stance]}｜攻${fmt(a.dmg)}${a.hits.length?'(中'+a.hits.join('')+')':''} 回${fmt1(hl.heal)}%${g.toxic&&R.toxicOn?'｜'+LV[toxLv(g)]+'毒'+g.toxic+'%→實際'+fmt1(toxDmg(g,t.detoxLv))+'%':''}${g.detox?'｜'+LV[detoxLv(g)]+'解毒':''}`)}
   }
   L.push('','----- 戰鬥過程 -----',...b.log.map(logLine));
   L.push('','----- 結果 -----');
@@ -648,8 +658,8 @@ function edGirl(){
     field('藥味（味）',chips(FLAVORS,g.flavors)),
     field('歸經',chips(ALL_MER,g.meridians)),
     field('預設行動',sel([['atk','⚔ 攻擊'],['heal','✚ 回復']],()=>g.stance,v=>g.stance=v),h('span',{class:'note'},'自動模式／友方用；手動模式係開場預選')),
-    field('毒性',num(()=>g.toxic,v=>g.toxic=v,1,70),h('span',{class:'note'},'每次攻擊病人 -%')),
-    field('解毒',chk(()=>g.detox,v=>g.detox=v,'具解毒能力'),g.detoxType?h('span',{class:'note'},g.detoxType):null),
+    field('毒性',num(()=>g.toxic,v=>g.toxic=v,1,70),h('span',{class:'note'},'每次攻擊病人 -%（1–4 小毒／5–9 中毒／10+ 大毒）')),
+    field('解毒',sel([[0,'無'],[1,'小解毒'],[2,'中解毒'],[3,'大解毒']],()=>detoxLv(g),v=>{g.detoxLv=+v;g.detox=+v>0}),h('span',{class:'note'},(g.detoxType?g.detoxType+'｜':'')+'同隊最高解毒級抵消毒級：毒傷 × (毒級−解毒級)/毒級')),
     h('div',{class:'preview',id:'preview'}),
     h('div',{class:'f'},h('button',{onclick:()=>{if(!g.name)return alert('請先改名');const i=S.library.findIndex(l=>l.name===g.name);i>=0?S.library[i]=clone(g):S.library.push(clone(g));save();buildHerbList();alert('已存入圖鑑：'+g.name)}},'存入圖鑑'),
       (s==='A'||s==='D')?chk(()=>isAlly?S.leaderOn.ally:S.leaderOn.ours,v=>{isAlly?S.leaderOn.ally=v:S.leaderOn.ours=v},'啟用此隊隊長BUFF'):null));
@@ -759,7 +769,7 @@ function edLib(){
     h('div',{class:'f'},h('select',{onchange:e=>{LF.sort=e.target.value;draw()}},Object.entries(LIB_SORTS).map(([v,t])=>h('option',{value:v,selected:LF.sort===v},t))),
       h('select',{onchange:e=>{LF.detox=e.target.value;draw()}},[['','全部（解毒與否）'],['any','🛡 只顯示解毒'],...DETOX_ORDER.map(t=>[t,'🛡 '+t]),['其他','🛡 其他（自訂）'],['none','冇解毒']].map(([v,t])=>h('option',{value:v,selected:LF.detox===v},t)))),
     cnt,list,
-    h('div',{class:'note'},`匯入規則：味取「，」前（微苦→苦）；性取第二段（微寒→涼，平偏溫→平）；有小毒 3%、有毒 5%、有大毒 10%。解毒按本草功效分 ${DETOX_ORDER.length} 類（${DETOX_ORDER.join('、')}）；本身有毒嘅「以毒攻毒」藥（例如山豆根、重樓、雄黃）唔當解毒。⚔n = 打中病魔幾多個弱點。`)];
+    h('div',{class:'note'},`匯入規則：味取「，」前（微苦→苦）；性取第二段（微寒→涼，平偏溫→平）；有小毒 3%、有毒 5%、有大毒 10%（毒性 1–4% 小毒、5–9% 中毒、10%+ 大毒）。解毒按本草功效分 ${DETOX_ORDER.length} 類（${DETOX_ORDER.map(t=>t+'＝'+LV[DETOX_LV_BY_TYPE[t]]).join('、')}）；本身有毒嘅「以毒攻毒」藥（例如山豆根、重樓、雄黃）唔當解毒。⚔n = 打中病魔幾多個弱點。`)];
 }
 
 /* ================= 按鈕 ================= */
