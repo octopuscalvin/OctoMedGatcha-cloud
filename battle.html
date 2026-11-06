@@ -208,7 +208,14 @@ function closeDrawer(){document.body.classList.remove('drawer')}
 function showEditor(){if(isPhone()&&!playing)openDrawer()}
 const MERIDIANS=['心','肝','脾','肺','腎','胃','大腸','膀胱'];          // 病魔弱點只會係呢 8 個
 const ALL_MER=[...MERIDIANS,'膽','小腸','三焦','心包'];             // 少女歸經可以多啲
-const DETOX=['甘草','綠豆'];                                        // 匯入資料庫時當解毒嘅藥
+// 匯入資料庫時當解毒嘅藥：類型 → 藥名（本身有毒嘅「以毒攻毒」藥唔計，匯入時自動剔走）
+const DETOX_GROUPS={
+  '解百藥毒':['甘草','甘草(炙)','綠豆','綠豆衣','黑大豆 (黑豆)','蜂蜜','蜂蜜(炒)'],
+  '解食物／藥物毒':['生薑','紫蘇','白扁豆','葛花','大蒜','防風','土茯苓'],
+  '清熱解毒':['金銀花','忍冬藤','連翹','蒲公英','紫花地丁','野菊花','菊花','板藍根','大青葉','青黛','穿心蓮','魚腥草','敗醬草','白頭翁','馬齒莧','射干','馬勃','紅藤','漏蘆','白花蛇舌草','半邊蓮','半枝蓮','拳參','黃連','黃芩','黃柏','梔子','牛蒡子','升麻','虎杖','垂盆草','雞骨草','金錢草','絞股藍','千里光','鬼針草','金蕎麥','蛇莓','委陵菜','翻白草','地錦草','鳳尾草','鴨跖草','苦蕒菜','貓爪草','腫節風','葎草','豬殃殃','珍珠草 (葉下珠)','車前草','馬蘭','苦瓜','仙人掌','白鮮皮','硼砂','爐甘石'],
+  '涼血解毒':['紫草','玄參','地榆','大黃','水牛角','犀角 (歷史用藥)','極品天然犀角 (歷史記載)','天然牛黃','人工牛黃','野生天然牛黃','純野生熊膽','黑市極品熊膽粉','豬膽汁','羚羊角','正品野生羚羊角']};
+const DETOX_TYPE=Object.fromEntries(Object.entries(DETOX_GROUPS).flatMap(([t,ns])=>ns.map(n=>[n,t])));
+const DETOX_ORDER=Object.keys(DETOX_GROUPS);
 // 放咗上網（本草抽卡 GitHub Pages 嘅 battle.html）就要管理員模式；本機 file:// 開唔使
 const HOSTED=/^https?:$/.test(location.protocol);
 const ADMIN_KEY='octoMedAdmin';
@@ -242,11 +249,19 @@ function fromMed(m){
   const tox=parts.slice(1).join('');
   const toxic=/大毒/.test(tox)?10:/小毒/.test(tox)?3:/毒/.test(tox)?5:0;
   const meridians=String(m.meridians||'').split(/[、，,\s]+/).filter(Boolean);
-  return{name:m.name,rarity:RARITIES.includes(m.rarity)?m.rarity:'N',nature,flavors,meridians,stance:'atk',toxic,detox:DETOX.includes(m.name),
+  return{name:m.name,rarity:RARITIES.includes(m.rarity)?m.rarity:'N',nature,flavors,meridians,stance:'atk',toxic,detox:!toxic&&!!DETOX_TYPE[m.name],detoxType:toxic?undefined:DETOX_TYPE[m.name],
     natureRaw:m.nature,primary:m.primary,secondary:m.secondary};
 }
 function allLib(){const names=new Set(S.library.map(g=>g.name));return[...S.library.map(g=>Object.assign({custom:true},g)),...HERBS.filter(g=>!names.has(g.name))]}
 function findHerb(name){return allLib().find(g=>g.name===name)}
+// 解毒排先：解毒（按類型）→ 其餘；同組按稀有度高至低
+const RANK=g=>g.detox?DETOX_ORDER.indexOf(g.detoxType||'')+1||DETOX_ORDER.length+1:99;
+const detoxSort=(a,b)=>RANK(a)-RANK(b)||RARITIES.indexOf(b.rarity)-RARITIES.indexOf(a.rarity);
+const detoxLabel=g=>g.detox?'解毒'+(g.detoxType?'・'+g.detoxType:''):'';
+function buildHerbList(){
+  const dl=$('#herbList')||document.body.appendChild(h('datalist',{id:'herbList'}));
+  dl.replaceChildren(...[...allLib()].sort(detoxSort).map(g=>h('option',{value:g.name},`${g.detox?'🛡'+detoxLabel(g)+' ':''}${g.rarity} ${g.nature} ${g.meridians.join('')}`)));
+}
 
 const G=(name,rarity='SR',nature='平',flavors=[],meridians=[],stance='atk',toxic=0,detox=false)=>({name,rarity,nature,flavors,meridians,stance,toxic,detox});
 const EMPTY=()=>G('','SR','平',[],[],'atk');
@@ -622,6 +637,10 @@ function edGirl(){
   out.push(
     field('從圖鑑載入',h('input',{list:'herbList',placeholder:'打藥名搜尋…',style:'width:170px',onchange:e=>{const f=findHerb(e.target.value.trim());if(!f)return;const c=clone(f);delete c.custom;setGirl(s,c);changed();renderEditor()}}),
       h('button',{onclick:()=>{setGirl(s,EMPTY());changed();renderEditor()}},'清空此位')),
+    field('🛡 解毒少女',h('select',{style:'max-width:240px',onchange:e=>{const f=findHerb(e.target.value);if(!f)return;const c=clone(f);c.stance=g.stance;delete c.custom;setGirl(s,c);changed();renderEditor()}},
+      h('option',{value:''},'揀解毒少女…（按類型排）'),
+      DETOX_ORDER.concat('其他').map(t=>{const gs=allLib().filter(x=>x.detox&&(x.detoxType||'其他')===t).sort(detoxSort);
+        return gs.length?h('optgroup',{label:`${t}（${gs.length}）`},gs.map(x=>h('option',{value:x.name},`${x.name}　${x.rarity}｜${x.nature}｜${x.meridians.join('')}`))):null}))),
     g.natureRaw?h('div',{class:'note'},`資料庫原文：${g.natureRaw}｜${g.primary||''}・${g.secondary||''}`):null,
     field('名稱',h('input',{value:g.name,onchange:e=>{g.name=e.target.value.trim();changed()}})),
     field('稀有度',sel(RARITIES.map(r=>[r,`${r}（${S.rules.rarity[r].stars}★ ${S.rules.rarity[r].mod>=0?'+':''}${S.rules.rarity[r].mod}%）`]),()=>g.rarity,v=>g.rarity=v)),
@@ -630,9 +649,9 @@ function edGirl(){
     field('歸經',chips(ALL_MER,g.meridians)),
     field('預設行動',sel([['atk','⚔ 攻擊'],['heal','✚ 回復']],()=>g.stance,v=>g.stance=v),h('span',{class:'note'},'自動模式／友方用；手動模式係開場預選')),
     field('毒性',num(()=>g.toxic,v=>g.toxic=v,1,70),h('span',{class:'note'},'每次攻擊病人 -%')),
-    field('解毒',chk(()=>g.detox,v=>g.detox=v,'具解毒能力')),
+    field('解毒',chk(()=>g.detox,v=>g.detox=v,'具解毒能力'),g.detoxType?h('span',{class:'note'},g.detoxType):null),
     h('div',{class:'preview',id:'preview'}),
-    h('div',{class:'f'},h('button',{onclick:()=>{if(!g.name)return alert('請先改名');const i=S.library.findIndex(l=>l.name===g.name);i>=0?S.library[i]=clone(g):S.library.push(clone(g));save();alert('已存入圖鑑：'+g.name)}},'存入圖鑑'),
+    h('div',{class:'f'},h('button',{onclick:()=>{if(!g.name)return alert('請先改名');const i=S.library.findIndex(l=>l.name===g.name);i>=0?S.library[i]=clone(g):S.library.push(clone(g));save();buildHerbList();alert('已存入圖鑑：'+g.name)}},'存入圖鑑'),
       (s==='A'||s==='D')?chk(()=>isAlly?S.leaderOn.ally:S.leaderOn.ours,v=>{isAlly?S.leaderOn.ally=v:S.leaderOn.ours=v},'啟用此隊隊長BUFF'):null));
   setTimeout(updatePreview);
   return out;
@@ -712,17 +731,23 @@ function edRules(){
     h('h4',{},'其他'),
     field('時間上限',num(()=>R.maxTime,v=>R.maxTime=v,10),'秒')];
 }
-const LF={q:'',rarity:'',primary:'',secondary:'',weakOnly:false};
+const LF={q:'',rarity:'',primary:'',secondary:'',weakOnly:false,detox:'',sort:''};
+const LIB_SORTS={'':'預設排序',detox:'🛡 解毒排先',rarity:'稀有度高→低',hit:'弱點命中多→少'};
 function edLib(){
   const lib=allLib(),uniq=k=>[...new Set(HERBS.map(g=>g[k]).filter(Boolean))];
   const list=h('div',{class:'lib'}),cnt=h('div',{class:'note'});
   const draw=()=>{
     const en=E(),targets=SLOTS.filter(slotUsable);
-    const res=lib.filter(g=>(!LF.q||g.name.includes(LF.q))&&(!LF.rarity||g.rarity===LF.rarity)&&(!LF.primary||g.primary===LF.primary)&&(!LF.secondary||g.secondary===LF.secondary)&&(!LF.weakOnly||g.meridians.some(m=>en.weak.includes(m))));
+    const res=lib.filter(g=>(!LF.q||g.name.includes(LF.q))&&(!LF.rarity||g.rarity===LF.rarity)&&(!LF.primary||g.primary===LF.primary)&&(!LF.secondary||g.secondary===LF.secondary)&&(!LF.weakOnly||g.meridians.some(m=>en.weak.includes(m)))
+      &&(!LF.detox||(LF.detox==='any'?g.detox:LF.detox==='none'?!g.detox:g.detox&&(g.detoxType||'其他')===LF.detox)));
+    const nHit=g=>g.meridians.filter(m=>en.weak.includes(m)).length,rk=g=>RARITIES.indexOf(g.rarity);
+    if(LF.sort==='detox')res.sort(detoxSort);
+    else if(LF.sort==='rarity')res.sort((a,b)=>rk(b)-rk(a));
+    else if(LF.sort==='hit')res.sort((a,b)=>nHit(b)-nHit(a)||rk(b)-rk(a));
     cnt.textContent=`符合 ${res.length} 種${res.length>80?'（只顯示頭 80 種，請再收窄搜尋）':''}`;
     list.replaceChildren(...res.slice(0,80).flatMap(g=>{
       const hit=g.meridians.filter(m=>en.weak.includes(m));
-      return[h('div',{title:g.natureRaw||''},h('b',{},g.name),g.custom?h('span',{class:'tag l',style:'margin-left:4px'},'自訂'):null,` ${g.rarity}｜${g.nature}｜${g.flavors.join('')}｜${g.meridians.join('')}`,hit.length?h('span',{class:'bad'},` ⚔${hit.length}`):null,g.toxic?h('span',{class:'bad'},` 毒${g.toxic}%`):null,g.detox?h('span',{class:'ok'},' 解毒'):null),
+      return[h('div',{title:g.natureRaw||''},h('b',{},g.name),g.custom?h('span',{class:'tag l',style:'margin-left:4px'},'自訂'):null,` ${g.rarity}｜${g.nature}｜${g.flavors.join('')}｜${g.meridians.join('')}`,hit.length?h('span',{class:'bad'},` ⚔${hit.length}`):null,g.toxic?h('span',{class:'bad'},` 毒${g.toxic}%`):null,g.detox?h('span',{class:'ok'},' 🛡'+detoxLabel(g)):null),
         h('div',{class:'btns'},targets.map(s=>h('button',{onclick:()=>{const c=clone(g);delete c.custom;setGirl(s,c);changed()}},s)),
           g.custom?h('button',{title:HERBS.some(x=>x.name===g.name)?'刪除自訂版，還原資料庫版本':'刪除',onclick:()=>{if(confirm('刪除自訂 '+g.name+'？')){S.library=S.library.filter(x=>x.name!==g.name);save();renderEditor()}}},'✕'):null)]}));
   };
@@ -731,8 +756,10 @@ function edLib(){
   return[h('div',{class:'note'},HERBS.length?`本草抽卡資料庫：${HERBS.length} 種（${DB_SRC}）＋ 自訂 ${S.library.length} 種。資料庫每次開頁重新讀，自訂／改過嘅會蓋過同名資料。`:h('span',{class:'bad'},'⚠ 讀唔到本草抽卡 medData.js，只有自訂少女。')),
     h('div',{class:'f'},h('input',{placeholder:'搜尋藥名',value:LF.q,style:'width:120px',oninput:e=>{LF.q=e.target.value.trim();draw()}}),opt('rarity',RARITIES,'全部稀有度'),opt('primary',uniq('primary'),'全部類別'),opt('secondary',uniq('secondary'),'全部屬性'),
       h('label',{},h('input',{type:'checkbox',checked:LF.weakOnly,onchange:e=>{LF.weakOnly=e.target.checked;draw()}}),' 只顯示打中而家病魔弱點')),
+    h('div',{class:'f'},h('select',{onchange:e=>{LF.sort=e.target.value;draw()}},Object.entries(LIB_SORTS).map(([v,t])=>h('option',{value:v,selected:LF.sort===v},t))),
+      h('select',{onchange:e=>{LF.detox=e.target.value;draw()}},[['','全部（解毒與否）'],['any','🛡 只顯示解毒'],...DETOX_ORDER.map(t=>[t,'🛡 '+t]),['其他','🛡 其他（自訂）'],['none','冇解毒']].map(([v,t])=>h('option',{value:v,selected:LF.detox===v},t)))),
     cnt,list,
-    h('div',{class:'note'},'匯入規則：味取「，」前（微苦→苦）；性取第二段（微寒→涼，平偏溫→平）；有小毒 3%、有毒 5%、有大毒 10%；甘草、綠豆當解毒。⚔n = 打中病魔幾多個弱點。')];
+    h('div',{class:'note'},`匯入規則：味取「，」前（微苦→苦）；性取第二段（微寒→涼，平偏溫→平）；有小毒 3%、有毒 5%、有大毒 10%。解毒按本草功效分 ${DETOX_ORDER.length} 類（${DETOX_ORDER.join('、')}）；本身有毒嘅「以毒攻毒」藥（例如山豆根、重樓、雄黃）唔當解毒。⚔n = 打中病魔幾多個弱點。`)];
 }
 
 /* ================= 按鈕 ================= */
@@ -781,7 +808,7 @@ if(!adminOK()){
   if(HOSTED)$('header h1').append(' ',h('a',{href:'./',style:'font-size:13px;color:var(--blue);font-weight:normal'},'← 返回抽卡'));
   load();
   for(const m of Object.values(S.modes))if(m.starScale==null)m.starScale=m.six?2:1;
-  document.body.append(h('datalist',{id:'herbList'},allLib().map(g=>h('option',{value:g.name},`${g.rarity} ${g.nature} ${g.meridians.join('')}`))));
+  buildHerbList();
   initHeader();renderTabs();resetBattle();renderEditor();
 });
 </script>
