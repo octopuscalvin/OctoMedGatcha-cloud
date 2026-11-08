@@ -219,10 +219,11 @@ const DETOX_ORDER=Object.keys(DETOX_GROUPS);
 // 毒／解毒三級：1 小、2 中、3 大。毒傷 = 毒性% × max(0, 毒級 − 解毒級) ÷ 毒級（解毒過頭都只係 0，唔會回血）
 const LV=['無','小','中','大'];
 const DETOX_LV_BY_TYPE={'解百藥毒':3,'解食物／藥物毒':2,'涼血解毒':2,'清熱解毒':1};
+const starOf=(g,R)=>+g.stars||R.rarity[g.rarity].stars;   // 升星：少女可以自己設星數，冇就跟稀有度
 const toxLv=g=>{const t=+g.toxic||0;return t>=10?3:t>=5?2:t>0?1:0};
 const detoxLv=g=>g.detox?(+g.detoxLv||DETOX_LV_BY_TYPE[g.detoxType||DETOX_TYPE[g.name]]||2):0;
 const toxDmg=(g,dl)=>{const p=toxLv(g);return p?(+g.toxic)*Math.max(0,p-dl)/p:0};
-// 放咗上網（本草抽卡 GitHub Pages 嘅 battle.html）就要管理員模式；本機 file:// 開唔使
+// 放咗上網（本草抽卡 GitHub Pages 嘅 battle.html）就要管理員模式；本機 file:// 開唔使。
 const HOSTED=/^https?:$/.test(location.protocol);
 const ADMIN_KEY='octoMedAdmin';
 const GH_DB='https://octopuscalvin.github.io/OctoMedGatcha-cloud/medData.js';
@@ -368,7 +369,7 @@ class Battle{
   }
   prep(tm){
     const R=this.R,gs=tm.members.map(x=>x.g),n=gs.length,lead=tm.leader&&n>=2;
-    tm.stars=gs.reduce((s,g)=>s+R.rarity[g.rarity].stars,0);
+    tm.stars=gs.reduce((s,g)=>s+starOf(g,R),0);
     tm.scale=this.M.starScale||1;                       // 癌魔 6 人：星數門檻 ×2
     tm.interval=intervalFor(tm.stars/tm.scale,R);
     tm.sameNature=lead&&gs.every(g=>g.nature===gs[0].nature);
@@ -490,7 +491,7 @@ function renderStage(){
     if(!b){c.append(h('div',{class:'note'},'（空位）'));return c}
     const man=b.t.manual;
     c.append(h('div',{class:'nm'},lead?h('span',{class:'crown'},'♛ '):null,g.name),
-      h('div',{class:'rar'},'★'.repeat(S.rules.rarity[g.rarity].stars)+' ',h('span',{style:'color:var(--muted)'},g.rarity)),
+      h('div',{class:'rar'},'★'.repeat(starOf(g,S.rules))+' ',h('span',{style:'color:var(--muted)'},g.rarity)),
       h('div',{style:'color:var(--muted)'},`${g.nature}｜${g.flavors.join('')||'-'}｜${g.meridians.join('')||'-'}`),
       S.rules.toxicOn&&g.toxic>0||g.detox?h('div',{},S.rules.toxicOn&&g.toxic>0?h('span',{class:'bad'},`${LV[toxLv(g)]}毒${g.toxic}% `):null,g.detox?h('span',{class:'ok'},LV[detoxLv(g)]+'解毒'):null):null,
       h('div',{class:'stance'},['atk','heal'].map(k=>h('button',{class:k,'data-c':k,disabled:!man,title:man?'揀呢招':'自動出招',onclick:e=>{e.stopPropagation();choose(s,k)}},k==='atk'?'⚔ 攻':'✚ 回'))),
@@ -575,7 +576,7 @@ function buildReport(b){
   for(const t of b.teams){
     L.push('',`【${t.label}】${t.members.length}人 ${t.stars}★${t.scale>1?'（門檻×'+t.scale+'）':''} → CD ${fmt1(t.interval)}s｜${t.manual?'手動':'自動'}｜隊長BUFF${t.leader?'':'(關)'}：同藥性${t.sameNature?'✓':'✗'} 同味${t.commonFlavor.length?'✓('+t.commonFlavor.join('')+')':'✗'} 歸經一致${t.commonMer.length?'✓('+t.commonMer.join('')+')':'✗'}${t.hasToxic?(t.toxicDebuff?'｜⚠有毒無解毒':`｜有毒・隊伍${LV[t.detoxLv]}解毒`):''}`);
     for(const x of t.members){const g=x.g,a=calcAtk(g,en,R,t.atkBuff),hl=calcHeal(g,en,R);
-      L.push(`  ${x.slot} ${g.name} ${g.rarity}｜${g.nature}｜${g.flavors.join('')||'-'}｜${g.meridians.join('')||'-'}｜預設${ACT[g.stance]}｜攻${fmt(a.dmg)}${a.hits.length?'(中'+a.hits.join('')+')':''} 回${fmt1(hl.heal)}%${g.toxic&&R.toxicOn?'｜'+LV[toxLv(g)]+'毒'+g.toxic+'%→實際'+fmt1(toxDmg(g,t.detoxLv))+'%':''}${g.detox?'｜'+LV[detoxLv(g)]+'解毒':''}`)}
+      L.push(`  ${x.slot} ${g.name} ${g.rarity}${g.stars?"("+g.stars+"★)":""}｜${g.nature}｜${g.flavors.join('')||'-'}｜${g.meridians.join('')||'-'}｜預設${ACT[g.stance]}｜攻${fmt(a.dmg)}${a.hits.length?'(中'+a.hits.join('')+')':''} 回${fmt1(hl.heal)}%${g.toxic&&R.toxicOn?'｜'+LV[toxLv(g)]+'毒'+g.toxic+'%→實際'+fmt1(toxDmg(g,t.detoxLv))+'%':''}${g.detox?'｜'+LV[detoxLv(g)]+'解毒':''}`)}
   }
   L.push('','----- 戰鬥過程 -----',...b.log.map(logLine));
   L.push('','----- 結果 -----');
@@ -654,6 +655,7 @@ function edGirl(){
     g.natureRaw?h('div',{class:'note'},`資料庫原文：${g.natureRaw}｜${g.primary||''}・${g.secondary||''}`):null,
     field('名稱',h('input',{value:g.name,onchange:e=>{g.name=e.target.value.trim();changed()}})),
     field('稀有度',sel(RARITIES.map(r=>[r,`${r}（${S.rules.rarity[r].stars}★ ${S.rules.rarity[r].mod>=0?'+':''}${S.rules.rarity[r].mod}%）`]),()=>g.rarity,v=>g.rarity=v)),
+    field('星數（升星）',sel([[0,'跟稀有度'],[1,'1★'],[2,'2★'],[3,'3★'],[4,'4★'],[5,'5★']],()=>+g.stars||0,v=>{g.stars=+v||undefined}),h('span',{class:'note'},'重複卡升星；只影響隊伍總星數（CD），攻擊加減照稀有度')),
     field('藥性（性）',sel(NATURES,()=>g.nature,v=>g.nature=v)),
     field('藥味（味）',chips(FLAVORS,g.flavors)),
     field('歸經',chips(ALL_MER,g.meridians)),
@@ -689,10 +691,36 @@ function updateHpHelp(){
     h('div',{},`按現陣容全部攻擊估算：每回合 ${fmt(per)} × ${rounds} 回合 = `,h('b',{},fmt(est)),' ',apply(est)),
     h('div',{class:'note'},'「回合」係全體各出一招計；未計回血回合、隊長BUFF 同病魔回血。'));
 }
+/* ===== 7 個故事大佬：HP 用推薦隊（自動出招）調到啱啱 20 回合；扣血表令「全攻唔補」大約 5–9 回合輸 ===== */
+const BOSS_PRESETS=[
+ {area:'乾寒區',name:'疱瘡神・肺炎',stars:18,hp:19000,weak:['肺','肝','大腸'],patho:'熱',likes:['苦','甘'],decay:[6.5,4.55,3.25,1.95],regen:0,
+  team:[['龍膽草','atk',3],['胡黃連','atk',3],['拳參','atk',3],['黃芩','atk',3],['赤芝 (人工靈芝)','atk',3],['石斛','heal',3]]},
+ {area:'濕寒區',name:'蜚・腎石',stars:20,hp:17500,weak:['腎','膀胱','胃'],patho:'熱',likes:['甘','淡'],decay:[9.5,6.65,4.75,2.85],regen:0,
+  team:[['頂級鐵皮石斛','atk',5],['石斛','atk',3],['黃柏','atk',3],['金錢草','atk',3],['天門冬','atk',3],['澤瀉','heal',3]]},
+ {area:'中和區',name:'內爾伽勒・肝硬化',stars:23,hp:14500,weak:['肝','脾','腎','胃'],patho:'無',likes:['甘','酸'],decay:[10.5,7.35,5.25,3.15],regen:0.2,
+  team:[['天然野生靈芝','atk',5],['鱉甲','atk',4],['赤芝 (人工靈芝)','atk',4],['野生藏紅花','atk',4],['白芍','heal',3],['酸棗仁','heal',3]]},
+ {area:'濕熱區',name:'瑪利亞曼・胃潰瘍',stars:25,hp:16500,weak:['胃','脾','腎','肝'],patho:'寒',likes:['甘','辛'],decay:[14,9.8,7,4.2],regen:0.3,
+  team:[['冬蟲夏草','atk',5],['三七','atk',4],['砂仁','atk',4],['仙茅','atk',4],['菟絲子','heal',4],['人參','heal',4]]},
+ {area:'乾熱區',name:'塞赫美特・中風',stars:26,hp:22500,weak:['心','肝','腎','脾'],patho:'寒',likes:['辛','苦'],decay:[11.5,8.05,5.75,3.45],regen:0.5,
+  team:[['野生雪上一枝蒿','atk',5],['肉桂','atk',4],['血竭','atk',4],['沒藥','atk',4],['乳香','heal',4],['甘草','atk',5]]},
+ {area:'最終',name:'別西卜・癌變',stars:30,hp:18000,weak:['肝','脾','腎','肺','胃'],patho:'寒',likes:['甘','苦'],decay:[18,12.6,9,5.4],regen:1,
+  team:[['天然野生靈芝','atk',5],['赤芝 (人工靈芝)','atk',5],['野生雪上一枝蒿','atk',5],['冬蟲夏草','heal',5],['沒藥','heal',5],['甘草','atk',5]]},
+ {area:'隱藏',name:'海拉・抑鬱症',stars:30,hp:13000,weak:['心','肝','脾','肺'],patho:'無',likes:['甘','酸'],decay:[15.5,10.85,7.75,4.65],regen:0.5,
+  team:[['合歡皮','atk',5],['合歡花','atk',5],['鬱金','atk',5],['玫瑰花','atk',5],['酸棗仁','heal',5],['大棗','heal',5]]},
+];
+function applyBoss(p){
+  S.mode='boss';const m=S.modes.boss;
+  Object.assign(m,{decay:[80,50,20,0].map((a,i)=>({above:a,pct:p.decay[i],per:1})),regen:p.regen,six:true,ally:0,starScale:2});
+  S.enemies.boss={name:p.name,maxHp:p.hp,weak:[...p.weak],patho:p.patho,likes:[...p.likes]};
+  S.ours=p.team.map(([n,st,stars])=>{const g=findHerb(n);return g?Object.assign(clone(g),{stance:st,stars}):EMPTY()}).map(g=>{delete g.custom;return g});
+  save();initHeader();renderTabs();resetBattle();renderEditor();
+}
 function edEnemy(){
   const en=E();
   setTimeout(updateHpHelp);
   return[h('div',{class:'note'},`目前模式：${M().label}（每個模式有自己嘅病魔）`),
+    field('📜 大佬劇本',h('select',{onchange:e=>{const p=BOSS_PRESETS[+e.target.value];if(p&&confirm(`載入「${p.name}」？會轉去大佬模式，覆蓋大佬模式嘅病魔、扣血表、回血同我方 6 人。`))applyBoss(p);else e.target.value=''}},
+      h('option',{value:''},'揀一個大佬（20 回合設計）…'),BOSS_PRESETS.map((p,i)=>h('option',{value:i},`${p.area}｜${p.name}｜${p.stars}★`)))),
     field('名稱',h('input',{value:en.name,onchange:e=>{en.name=e.target.value;changed()}})),
     field('病魔生命',num(()=>en.maxHp,v=>en.maxHp=v,100,100)),
     field('目標捱幾多回合',num(()=>S.hpRounds,v=>S.hpRounds=v,1,60)),
