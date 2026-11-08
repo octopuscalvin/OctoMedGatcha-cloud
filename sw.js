@@ -1,10 +1,12 @@
-const CACHE_NAME = 'bencao-cache-v5';
+const CACHE_NAME = 'bencao-cache-v6';
 const urlsToCache = [
   '/OctoMedGatcha-cloud/',
   '/OctoMedGatcha-cloud/index.html',
+  '/OctoMedGatcha-cloud/girl.html',
   '/OctoMedGatcha-cloud/admin.html',
   '/OctoMedGatcha-cloud/battle.html',
   '/OctoMedGatcha-cloud/medData.js',
+  '/OctoMedGatcha-cloud/medDataGirl.js',
   '/OctoMedGatcha-cloud/manifest.json',
   '/OctoMedGatcha-cloud/icon-192.png',
   '/OctoMedGatcha-cloud/icon-512.png',

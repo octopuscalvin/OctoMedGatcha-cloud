@@ -123,6 +123,8 @@
         .admin-btn.active-admin { background-color: #9B59B6; color: white; border: 1px solid #8E44AD; }
         .update-btn { border: 1px solid #27AE60; color: #27AE60; }
         .update-btn:hover { background-color: #27AE60; color: white; transform: scale(1.05); }
+        .girl-btn { background-color: transparent; padding: 6px 15px; border-radius: 20px; cursor: pointer; font-size: 0.9em; white-space: nowrap; transition: all 0.2s ease; border: 1px solid #E91E8C; color: #E91E8C; }
+        .girl-btn:hover { background-color: #E91E8C; color: white; transform: scale(1.05); }
 
         /* ===== 6. 藥材卡片顯示區 ===== */
         .category-section { max-width: 1000px; margin: 0 auto 40px auto; }
@@ -241,6 +243,7 @@
             <button class="admin-btn" id="battleBtn" style="display:none" onclick="openBattleSim()">⚔️ 戰鬥模擬器</button>
             <button class="update-btn" onclick="forceUpdateApp()">📥 檢查更新</button>
             <button class="update-btn" onclick="window.open('admin.html', '_blank')">🗂️ 資料庫管理後台</button>
+            <button class="girl-btn" onclick="location.href='girl.html'">🌸 草藥少女版</button>
         </div>
     </div>
 

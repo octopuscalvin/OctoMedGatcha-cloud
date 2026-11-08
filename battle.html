@@ -226,9 +226,13 @@ const toxDmg=(g,dl)=>{const p=toxLv(g);return p?(+g.toxic)*Math.max(0,p-dl)/p:0}
 // 放咗上網（本草抽卡 GitHub Pages 嘅 battle.html）就要管理員模式；本機 file:// 開唔使。
 const HOSTED=/^https?:$/.test(location.protocol);
 const ADMIN_KEY='octoMedAdmin';
-const GH_DB='https://octopuscalvin.github.io/OctoMedGatcha-cloud/medData.js';
-// 網上：同資料夾 medData.js；本機：本草抽卡資料夾 → 網上 → 同資料夾後備副本
-const DB_PATHS=HOSTED?['medData.js',GH_DB]:['../OctoMedGatcha-cloud/OctoMedGatcha-cloud/medData.js',GH_DB,'medData.js'];
+// ?roster=girl 由 girl.html 帶入，令戰鬥模擬器讀草藥少女縮編版資料庫，而唔係原578種全版
+const ROSTER=new URLSearchParams(location.search).get('roster')==='girl'?'girl':'full';
+const DB_FILE=ROSTER==='girl'?'medDataGirl.js':'medData.js';
+const BACK_HREF=ROSTER==='girl'?'girl.html':'./';
+const GH_DB=`https://octopuscalvin.github.io/OctoMedGatcha-cloud/${DB_FILE}`;
+// 網上：同資料夾資料庫檔；本機：本草抽卡資料夾 → 網上 → 同資料夾後備副本
+const DB_PATHS=HOSTED?[DB_FILE,GH_DB]:[`../OctoMedGatcha-cloud/OctoMedGatcha-cloud/${DB_FILE}`,GH_DB,DB_FILE];
 const NATURES=['寒','涼','平','溫','熱'];
 const FLAVORS=['酸','苦','甘','辛','鹹','淡','澀'];
 const PATHOS=['無','熱','寒'];
@@ -237,7 +241,7 @@ const RARITIES=['N','R','SR','SSR','UR'];
 const SLOTS=['A','B','C','D','E','F'];
 const ACT={atk:'攻',heal:'回'};
 const DT=0.05;
-const KEY='herbBattleSim.v3';
+const KEY='herbBattleSim.v3'+(ROSTER==='girl'?'.girl':'');
 
 /* ================= 本草抽卡資料庫 ================= */
 let HERBS=[],DB_SRC='';
@@ -840,10 +844,10 @@ function adminOK(){if(!HOSTED)return true;try{return sessionStorage.getItem(ADMI
 if(!adminOK()){
   document.body.replaceChildren(h('div',{style:'max-width:420px;margin:18vh auto;padding:24px;text-align:center;border:1px solid #444;border-radius:12px;background:var(--panel)'},
     h('div',{style:'font-size:40px'},'🔒'),h('h2',{style:'margin:8px 0'},'需要管理員模式'),
-    h('p',{class:'note',style:'font-size:14px'},'請返本草抽卡主頁，撳「🔐 管理員功能」輸入密碼，再撳「⚔️ 戰鬥模擬器」入嚟。'),
-    h('a',{href:'./',style:'color:var(--blue);font-size:16px'},'← 返回本草抽卡')));
+    h('p',{class:'note',style:'font-size:14px'},`請返${ROSTER==='girl'?'草藥少女':'本草抽卡'}主頁，撳「🔐 管理員功能」輸入密碼，再撳「⚔️ 戰鬥模擬器」入嚟。`),
+    h('a',{href:BACK_HREF,style:'color:var(--blue);font-size:16px'},'← 返回'+(ROSTER==='girl'?'草藥少女':'本草抽卡'))));
 }else loadDB().then(()=>{
-  if(HOSTED)$('header h1').append(' ',h('a',{href:'./',style:'font-size:13px;color:var(--blue);font-weight:normal'},'← 返回抽卡'));
+  if(HOSTED)$('header h1').append(' ',h('a',{href:BACK_HREF,style:'font-size:13px;color:var(--blue);font-weight:normal'},'← 返回抽卡'));
   load();
   for(const m of Object.values(S.modes))if(m.starScale==null)m.starScale=m.six?2:1;
   buildHerbList();

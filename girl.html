@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>草藥少女 - 藥性抽卡檢索系統 (Beta)</title>
+    <base href="/OctoMedGatcha-cloud/">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#D9A05B">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        /* ===== 1. 全域與色彩設定 ===== */
+        :root {
+            --bg-color: #F8F9FA;
+            --text-main: #333333;
+            --text-muted: #666666;
+            --accent-color: #D9A05B;
+            --border-color: #E0E0E0;
+            
+            --hl-hot: #C0392B;  
+            --hl-cold: #2980B9; 
+            --hl-neutral: #27AE60; 
+            
+            --card-hot: #FFEDED;    
+            --card-warm: #FFF5E6;   
+            --card-neutral: #EBF8EE; 
+            --card-cool: #E6F4F1;   
+            --card-cold: #E1EEF8;   
+        }
+
+        body {
+            font-family: "PingFang TC", "Heiti TC", "微軟正黑體", sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        h1 { text-align: center; color: var(--text-main); margin-bottom: 5px; }
+        .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 20px; font-size: 0.9em; }
+
+        /* ===== 2. 大類切換按鈕 ===== */
+        .filter-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 20px; }
+        .filter-btn {
+            background-color: #fff; border: 2px solid var(--accent-color);
+            color: var(--text-main); padding: 8px 25px; font-size: 16px;
+            border-radius: 30px; cursor: pointer; transition: all 0.3s ease;
+        }
+        .filter-btn.active, .filter-btn:hover { background-color: var(--accent-color); color: #fff; }
+
+        /* ===== 3. 搜尋與抽卡區塊 (修復手機版拉長變形) ===== */
+        .search-container { 
+            display: flex; flex-wrap: wrap; justify-content: center; align-items: center; 
+            gap: 15px; margin-bottom: 20px; 
+        }
+        
+        .search-box { display: flex; gap: 8px; width: 100%; max-width: 400px; }
+        .search-box input {
+            flex-grow: 1; padding: 10px 15px; border: 1px solid var(--border-color); 
+            border-radius: 20px; background-color: #fff; color: var(--text-main); 
+            font-size: 15px; outline: none;
+        }
+        .search-box input:focus { border-color: var(--accent-color); }
+        .search-box button {
+            padding: 10px 20px; background-color: var(--text-main); color: #fff;
+            border: none; border-radius: 20px; cursor: pointer; font-size: 15px; white-space: nowrap;
+        }
+
+        .gacha-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        
+        /* 祈願按鈕樣式 (加上 white-space 鎖死文字不換行) */
+        .btn-single, .gacha-btn {
+            white-space: nowrap; border: none; padding: 10px 20px; font-weight: bold; 
+            border-radius: 20px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+            color: #fff; font-size: 16px; transition: transform 0.2s;
+        }
+        .btn-single { background: linear-gradient(45deg, #3498DB, #2980B9); }
+        .gacha-btn { background: linear-gradient(45deg, #FFD700, #FFA500); }
+        .btn-single:hover, .gacha-btn:hover { transform: scale(1.05); }
+
+        /* ===== 4. 快速檢索標籤面板 ===== */
+        .quick-tags-container {
+            max-width: 800px; margin: 0 auto 20px auto; display: flex; flex-direction: column; gap: 12px;
+            background: #fff; padding: 15px 20px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+        .tag-group { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        .tag-label { font-weight: bold; color: var(--text-muted); font-size: 0.85em; width: 55px; flex-shrink: 0; }
+        
+        .quick-tag {
+            background: #FAFAFA; border: 1px solid var(--border-color); color: var(--text-main); padding: 4px 12px;
+            border-radius: 15px; font-size: 0.85em; cursor: pointer; transition: all 0.2s ease; user-select: none;
+        }
+        .quick-tag:hover { border-color: var(--accent-color); transform: scale(1.05); }
+        .quick-tag.active { background: var(--accent-color); color: #fff; border-color: var(--accent-color); box-shadow: 0 2px 5px rgba(217, 160, 91, 0.4); font-weight: bold; }
+        
+        .qt-N:hover { border-color: #9E9E9E; color: #9E9E9E; } .qt-N.active { background: #9E9E9E; color: #fff; border-color: #9E9E9E; }
+        .qt-R:hover { border-color: #3498DB; color: #3498DB; } .qt-R.active { background: #3498DB; color: #fff; border-color: #3498DB; }
+        .qt-SR:hover { border-color: #9B59B6; color: #9B59B6; } .qt-SR.active { background: #9B59B6; color: #fff; border-color: #9B59B6; }
+        .qt-SSR:hover { border-color: #FF8C00; color: #FF8C00; } .qt-SSR.active { background: #FF8C00; color: #fff; border-color: #FF8C00; }
+        .qt-UR:hover { border-color: #C0392B; color: #C0392B; } .qt-UR.active { background: #C0392B; color: #fff; border-color: #C0392B; }
+
+        /* ===== 5. 圖鑑進度與系統管理區塊 (全新儀表板設計) ===== */
+        .progress-wrapper {
+            max-width: 800px; margin: 0 auto 30px auto; padding: 15px 20px;
+            background: #fff; border-radius: 12px; border: 1px dashed var(--accent-color);
+            display: flex; flex-direction: column; align-items: center; gap: 12px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+        .progress-container { font-weight: bold; color: var(--accent-color); font-size: 1.1em; letter-spacing: 1px; }
+        .admin-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+
+        /* 管理按鈕樣式 */
+        .reset-btn, .admin-btn, .update-btn {
+            background-color: transparent; padding: 6px 15px; border-radius: 20px; 
+            cursor: pointer; font-size: 0.9em; white-space: nowrap; transition: all 0.2s ease;
+        }
+        .reset-btn { border: 1px solid #E74C3C; color: #E74C3C; }
+        .reset-btn:hover { background-color: #E74C3C; color: white; transform: scale(1.05); }
+        .admin-btn { border: 1px solid #9B59B6; color: #9B59B6; }
+        .admin-btn:hover { background-color: #9B59B6; color: white; transform: scale(1.05); }
+        .admin-btn.active-admin { background-color: #9B59B6; color: white; border: 1px solid #8E44AD; }
+        .update-btn { border: 1px solid #27AE60; color: #27AE60; }
+        .update-btn:hover { background-color: #27AE60; color: white; transform: scale(1.05); }
+
+        /* ===== 6. 藥材卡片顯示區 ===== */
+        .category-section { max-width: 1000px; margin: 0 auto 40px auto; }
+        .category-title { border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-bottom: 20px; color: var(--accent-color); display: flex; justify-content: space-between;}
+        
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; }
+        
+        .med-card { border: 1px solid rgba(0,0,0,0.05); border-radius: 12px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: transform 0.2s, box-shadow 0.2s; position: relative; min-height: 120px; }
+        .med-card:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.08); }
+
+        /* 未解鎖的卡牌樣式 */
+        .card-locked { filter: grayscale(100%) opacity(0.6); pointer-events: none; }
+        .card-locked .med-name a { display: none; }
+        .card-locked .med-name::after { content: '❓ 未解鎖'; font-weight: bold; color: #999; }
+        .card-locked .med-content { filter: blur(4px); user-select: none; }
+
+        .bg-hot { background-color: var(--card-hot); border-color: #FAD4D4; }
+        .bg-warm { background-color: var(--card-warm); border-color: #FCE1C3; }
+        .bg-neutral { background-color: var(--card-neutral); border-color: #C3E6CB; }
+        .bg-cool { background-color: var(--card-cool); border-color: #C5E6DF; }
+        .bg-cold { background-color: var(--card-cold); border-color: #C4DEED; }
+        
+        .emoji-indicator { position: absolute; top: 12px; right: 15px; font-size: 1.4em; opacity: 0.8; pointer-events: none; }
+
+        .rarity-badge { position: absolute; bottom: 8px; right: 15px; font-size: 1.8em; font-weight: 900; font-style: italic; pointer-events: none; user-select: none; font-family: 'Arial Black', Impact, sans-serif; text-shadow: 2px 2px 3px rgba(0,0,0,0.15); }
+        .rarity-N { color: #9E9E9E; }
+        .rarity-R { color: #3498DB; text-shadow: 0 0 5px rgba(52, 152, 219, 0.4); }
+        .rarity-SR { color: #9B59B6; text-shadow: 0 0 8px rgba(155, 89, 182, 0.6); }
+        .rarity-SSR { background: linear-gradient(45deg, #FFD700, #FFA500, #FF8C00); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.7)); }
+        .rarity-UR { background: linear-gradient(270deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #8b00ff, #ff0000); background-size: 400% 400%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8)); animation: ur-glow 3s ease infinite; }
+        @keyframes ur-glow { 0% { background-position: 0% 50%; filter: drop-shadow(0 0 5px rgba(255,0,0,0.5)); } 50% { background-position: 100% 50%; filter: drop-shadow(0 0 15px rgba(0,255,0,0.8)); } 100% { background-position: 0% 50%; filter: drop-shadow(0 0 5px rgba(0,0,255,0.5)); } }
+
+        .med-name a { font-size: 1.25em; font-weight: bold; color: var(--accent-color); text-decoration: none; border-bottom: 1px dashed var(--accent-color); }
+        .med-content { margin-top: 10px; font-size: 0.9em; color: var(--text-main); }
+        .med-nature, .med-meridians { margin-bottom: 5px; }
+        .temp-hot { color: var(--hl-hot); font-weight: bold; }
+        .temp-cold { color: var(--hl-cold); font-weight: bold; }
+        .temp-neutral { color: var(--hl-neutral); font-weight: bold; }
+
+        .load-more-container { text-align: center; margin-top: 20px; }
+        .load-more-btn { background-color: white; border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px 30px; border-radius: 20px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+        .load-more-btn:hover { background-color: var(--border-color); color: var(--text-main); }
+
+        /* ===== 7. 側邊欄與抽卡滿版特效 ===== */
+        .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 998; opacity: 0; visibility: hidden; transition: all 0.3s; }
+        .sidebar-overlay.active { opacity: 1; visibility: visible; }
+        .sidebar { position: fixed; top: 0; right: -450px; width: 400px; max-width: 90vw; height: 100vh; background: #fff; box-shadow: -4px 0 15px rgba(0,0,0,0.2); z-index: 999; transition: right 0.3s; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+        .sidebar.active { right: 0; }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; }
+        .sidebar-title { font-size: 1.1em; font-weight: bold; color: var(--accent-color); }
+        .sidebar-controls { display: flex; align-items: center; gap: 10px; }
+        .clear-btn { font-size: 0.8em; color: #E74C3C; border: 1px solid #E74C3C; background: none; border-radius: 12px; padding: 3px 10px; cursor: pointer; }
+        .clear-btn:hover { background: #E74C3C; color: #fff; }
+        .close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-muted); }
+        .sidebar .grid-container { grid-template-columns: 1fr; } 
+        .sidebar .quick-tags-container { margin-bottom: 20px; padding: 10px; border: none; background: #F4F6F7; border-radius: 8px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); }
+        .sidebar .tag-group { gap: 4px; margin-bottom: 4px; }
+        .sidebar .tag-label { display: none; } 
+        .sidebar .quick-tag { padding: 3px 8px; font-size: 0.75em; }
+
+        .gacha-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; opacity: 0; visibility: hidden; transition: all 0.3s; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; box-sizing: border-box; padding: 40px 0; }
+        .gacha-overlay.active { opacity: 1; visibility: visible; }
+        .gacha-container { width: 95%; max-width: 1200px; text-align: center; margin: auto; }
+        .gacha-title { color: #D9A05B; font-size: 2.2em; margin-bottom: 20px; text-shadow: 0 0 15px rgba(217,160,91,0.6); letter-spacing: 2px;}
+        
+        .gacha-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 30px; perspective: 1000px; }
+        .gacha-grid > div { width: 220px; }
+        
+        .gacha-close-btn { padding: 12px 50px; background: #D9A05B; color: white; border: none; border-radius: 30px; font-size: 1.2em; cursor: pointer; transition: 0.3s; opacity: 0; transform: translateY(20px); pointer-events: none; }
+        .gacha-close-btn.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+        .gacha-close-btn:hover { background: #C0392B; }
+
+        .gacha-card-anim { opacity: 0; transform: translateY(60px) rotateX(30deg) scale(0.8); animation: gachaReveal 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes gachaReveal { to { opacity: 1; transform: translateY(0) rotateX(0) scale(1); } }
+
+        /* 手機版排版響應式微調 */
+        @media (max-width: 600px) { 
+            .grid-container { grid-template-columns: 1fr; } 
+            .tag-label { width: 100%; margin-bottom: 2px; } 
+        }
+    </style>
+</head>
+<body>
+
+    <div style="text-align:center;"><a href="index.html" style="color:var(--text-muted); text-decoration:none; font-size:0.9em;">&larr; 返回完整圖鑑版</a></div>
+    <h1>🌸 草藥少女 藥性抽卡系統</h1>
+    <div class="subtitle">精選 237 種本草縮編版｜💧濕 / 🍂乾 / 🌿中 | 稀有度：N (常見) < R < SR < SSR < UR (傳說)</div>
+
+    <!-- 1. 大類切換 -->
+    <div class="filter-container">
+        <button class="filter-btn active" onclick="switchCategory('植物藥')">植物藥</button>
+        <button class="filter-btn" onclick="switchCategory('動物藥')">動物藥</button>
+        <button class="filter-btn" onclick="switchCategory('金石藥')">金石藥</button>
+    </div>
+
+    <!-- 2. 搜尋與祈願功能區 -->
+    <div class="search-container">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="手動搜尋藥名 (如: 當歸)..." onkeypress="if(event.key==='Enter') executeSearch()">
+            <button onclick="executeSearch()">搜尋</button>
+        </div>
+        <div class="gacha-actions">
+            <button class="btn-single" onclick="startGacha1()">🔮 單次祈願</button>
+            <button class="gacha-btn" onclick="startGacha10()">✨ 十連祈願</button>
+        </div>
+    </div>
+
+    <!-- 3. 快速檢索標籤面板 -->
+    <div id="main-tags-panel"></div>
+
+    <!-- 4. 圖鑑進度與系統管理區塊 (移至標籤面板下方，加上 Dashboard 邊框) -->
+    <div class="progress-wrapper">
+        <div class="progress-container" id="collection-progress">📖 圖鑑收集進度: 0 / 0 種</div>
+        <div class="admin-actions">
+            <button class="reset-btn" onclick="resetGachaSave()">🔄 刪檔重刷</button>
+            <button class="admin-btn" id="adminToggleBtn" onclick="toggleAdminMode()">🔐 管理員功能</button>
+            <button class="admin-btn" id="battleBtn" style="display:none" onclick="openBattleSim()">⚔️ 戰鬥模擬器</button>
+            <button class="update-btn" onclick="forceUpdateApp()">📥 檢查更新</button>
+            <button class="update-btn" onclick="window.open('admin.html', '_blank')">🗂️ 資料庫管理後台</button>
+        </div>
+    </div>
+
+    <!-- 5. 藥材卡片顯示區 -->
+    <div id="content-area"></div>
+
+    <!-- 十連抽動畫滿版視窗 -->
+    <div id="gacha-overlay" class="gacha-overlay">
+        <div class="gacha-container">
+            <h2 class="gacha-title">✨ 藥典祈願結果 ✨</h2>
+            <div id="gacha-results" class="gacha-grid"></div>
+            <button class="gacha-close-btn" onclick="closeGacha()">收下藥材</button>
+        </div>
+    </div>
+
+    <!-- 側邊欄檢索面板 -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title" id="sidebarTitle">多條件篩選結果</div>
+            <div class="sidebar-controls">
+                <button class="clear-btn" onclick="clearAllFilters()">清除條件</button>
+                <button class="close-btn" onclick="closeSidebar()">&times;</button>
+            </div>
+        </div>
+        <div id="sidebar-tags-panel"></div>
+        <div id="sidebar-content"></div>
+    </div>
+
+    <!-- 引入外部資料庫檔案 (草藥少女縮編版) -->
+    <script src="/OctoMedGatcha-cloud/medDataGirl.js"></script>
+
+    <!-- 網頁邏輯 -->
+    <script>
+        // 註冊 Service Worker (PWA 核心)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker 註冊成功！範圍：', reg.scope))
+                    .catch(err => console.log('Service Worker 註冊失敗：', err));
+            });
+        }
+
+        const tagCategoriesData = [
+            { label: "大類", items: ["濕熱類", "乾熱類", "中性類", "濕寒類", "乾寒類"] },
+            { label: "性味", items: ["甘", "苦", "鹹", "酸", "辛", "熱/溫", "寒/涼", "平"] },
+            { label: "歸經", items: ["心", "肝", "脾", "肺", "腎", "胃", "大腸", "膀胱"] },
+            { label: "稀有", items: ["N", "R", "SR", "SSR", "UR"], isRarity: true }
+        ];
+
+        let currentPrimary = '植物藥';
+        let activeTags = []; 
+        const PAGE_SIZE = 8;
+        let categoryState = {};
+
+        function renderTagPanels() {
+            let html = '<div class="quick-tags-container">';
+            tagCategoriesData.forEach(cat => {
+                html += `<div class="tag-group"><span class="tag-label">${cat.label}：</span>`;
+                cat.items.forEach(item => {
+                    const isActive = activeTags.includes(item) ? 'active' : '';
+                    const rClass = cat.isRarity ? `qt-${item}` : '';
+                    html += `<button class="quick-tag ${rClass} ${isActive}" onclick="toggleTag('${item}')">${item}</button>`;
+                });
+                html += `</div>`;
+            });
+            html += '</div>';
+            document.getElementById('main-tags-panel').innerHTML = html;
+            document.getElementById('sidebar-tags-panel').innerHTML = html;
+        }
+
+        function toggleTag(tag) {
+            if (activeTags.includes(tag)) {
+                activeTags = activeTags.filter(t => t !== tag);
+            } else {
+                activeTags.push(tag);
+            }
+            renderTagPanels(); 
+            executeSearch();   
+        }
+
+        function clearAllFilters() {
+            activeTags = [];
+            document.getElementById('searchInput').value = "";
+            renderTagPanels();
+            executeSearch();
+        }
+
+        function shuffleArray(array) {
+            let arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function getCardBgClass(nature) {
+            if (nature.includes("大熱") || nature.includes("熱")) return "bg-hot";
+            if (nature.includes("大寒") || nature.includes("寒")) return "bg-cold";
+            if (nature.includes("微寒") || nature.includes("涼")) return "bg-cool";
+            if (nature.includes("溫") || nature.includes("微溫")) return "bg-warm";
+            return "bg-neutral";
+        }
+
+        function generateCardHTML(med, isGachaReveal = false) {
+            // 加入 isAdminMode 的判斷，如果是管理員模式，則全部視為已解鎖
+            const isUnlocked = isGachaReveal || isAdminMode || unlockedMeds.includes(med.name);
+            const lockedClass = isUnlocked ? "" : "card-locked";
+
+            const searchUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent('中藥 ' + med.name)}`;
+            const bgClass = getCardBgClass(med.nature);
+            const emoji = med.secondary.includes("濕") ? "💧" : (med.secondary.includes("乾") ? "🍂" : "🌿");
+            
+            const ht = med.nature.replace(/(大熱|微溫|大寒|微寒|熱|溫|涼|寒|平)/g, (match) => {
+                let tc = ["大熱", "熱", "微溫", "溫"].includes(match) ? "temp-hot" :
+                         ["大寒", "微寒", "寒", "涼"].includes(match) ? "temp-cold" : "temp-neutral";
+                return `<span class="${tc}">${match}</span>`;
+            });
+            
+            return `
+                <div class="med-card ${bgClass} ${lockedClass}">
+                    <div class="emoji-indicator" title="${med.secondary}">${emoji}</div>
+                    <div class="med-name">
+                        <a href="${searchUrl}" target="_blank" title="查看圖片">${med.name}</a>
+                    </div>
+                    <div class="med-content">
+                        <div class="med-nature">性味：${ht}</div>
+                        <div class="med-meridians">歸經：${med.meridians}</div>
+                    </div>
+                    <div class="rarity-badge rarity-${med.rarity}">${med.rarity}</div>
+                </div>
+            `;
+        }
+
+        function switchCategory(primaryFilter) {
+            currentPrimary = primaryFilter;
+            activeTags = []; 
+            document.getElementById('searchInput').value = "";
+            renderTagPanels();
+
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if(btn.innerText === primaryFilter) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+
+            categoryState = {};
+            const secondaryCategories = ["濕熱", "乾熱", "中性", "濕寒", "乾寒"];
+            
+            if (typeof medData === 'undefined') {
+                document.getElementById('content-area').innerHTML = '<h3 style="text-align:center;color:red;">載入資料庫 (medData.js) 失敗，請確認檔案與 HTML 位於同一資料夾，且內部無語法錯誤。</h3>';
+                return;
+            }
+
+            secondaryCategories.forEach(sec => {
+                let rawData = medData.filter(med => med.primary === primaryFilter && med.secondary === sec);
+                categoryState[sec] = { data: shuffleArray(rawData), displayCount: PAGE_SIZE };
+            });
+
+            renderAllSections();
+            closeSidebar();
+        }
+
+        function renderAllSections() {
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = '';
+            const secondaryCategories = ["濕熱", "乾熱", "中性", "濕寒", "乾寒"];
+            secondaryCategories.forEach(sec => {
+                const state = categoryState[sec];
+                if (state && state.data.length > 0) {
+                    const section = document.createElement('div');
+                    section.className = 'category-section';
+                    section.id = `section-${sec}`;
+                    
+                    section.innerHTML = `<div class="category-title"><h2>${sec}類</h2><span class="category-count">共 ${state.data.length} 種</span></div>`;
+                    const grid = document.createElement('div');
+                    grid.className = 'grid-container';
+                    state.data.slice(0, state.displayCount).forEach(med => { grid.innerHTML += generateCardHTML(med); });
+                    section.appendChild(grid);
+
+                    if (state.displayCount < state.data.length) {
+                        const btnC = document.createElement('div');
+                        btnC.className = 'load-more-container';
+                        btnC.innerHTML = `<button class="load-more-btn" onclick="categoryState['${sec}'].displayCount += PAGE_SIZE; renderAllSections();">更多... (還剩 ${state.data.length - state.displayCount} 種)</button>`;
+                        section.appendChild(btnC);
+                    }
+                    contentArea.appendChild(section);
+                }
+            });
+        }
+
+        function executeSearch() {
+            const keyword = document.getElementById('searchInput').value.trim();
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const sidebarContent = document.getElementById('sidebar-content');
+
+            if (keyword === "" && activeTags.length === 0) {
+                closeSidebar();
+                return;
+            }
+
+            let results = medData.filter(med => {
+                if (med.primary !== currentPrimary) return false;
+
+                if (keyword !== "" && !med.name.includes(keyword) && !med.nature.includes(keyword) && !med.meridians.includes(keyword)) {
+                    return false;
+                }
+
+                for (let tag of activeTags) {
+                    let searchKey = tag;
+                    if(tag === "熱/溫") searchKey = "熱|溫";
+                    if(tag === "寒/涼") searchKey = "寒|涼";
+                    let categoryKey = tag.replace('類',''); 
+
+                    const inCategory = med.secondary.includes(categoryKey);
+                    const inRarity = med.rarity === tag;
+                    const inMeridians = med.meridians.includes(tag);
+                    const regex = new RegExp(searchKey, 'g');
+                    const inNature = regex.test(med.nature);
+
+                    if (!(inCategory || inRarity || inMeridians || inNature)) {
+                        return false; 
+                    }
+                }
+                return true;
+            });
+
+            let conditionsText = activeTags.join(' + ');
+            if (keyword) conditionsText = conditionsText ? `${keyword} + ${conditionsText}` : keyword;
+            document.getElementById('sidebarTitle').innerText = `篩選: [ ${conditionsText} ] (共 ${results.length} 種)`;
+            
+            sidebarContent.innerHTML = '';
+            if(results.length > 0) {
+                const grid = document.createElement('div');
+                grid.className = 'grid-container';
+                results.forEach(med => grid.innerHTML += generateCardHTML(med));
+                sidebarContent.appendChild(grid);
+            } else {
+                sidebarContent.innerHTML = `<p style="color:var(--text-muted); text-align:center; margin-top:30px;">找不到符合全部條件的藥物。<br><br>請嘗試減少一些標籤。</p>`;
+            }
+            
+            sidebar.classList.add('active');
+            overlay.classList.add('active');
+        }
+
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.remove('active');
+            document.getElementById('sidebarOverlay').classList.remove('active');
+        }
+
+        window.onload = () => {
+            renderTagPanels();
+            switchCategory('植物藥');
+        };
+
+        // ================== 圖鑑系統與抽卡邏輯 ==================
+        let unlockedMeds = JSON.parse(localStorage.getItem('medgirl_unlocked')) || [];
+
+        function saveUnlock(name) {
+            if (!unlockedMeds.includes(name)) {
+                unlockedMeds.push(name);
+                localStorage.setItem('medgirl_unlocked', JSON.stringify(unlockedMeds));
+            }
+        }
+
+        function updateProgress() {
+            if (typeof medData === 'undefined') return;
+            // 以「不重複名稱」計算總數，避免同一藥材因跨類別重複登記而讓進度永遠無法達到 100%
+            const totalUnique = new Set(medData.map(m => m.name)).size;
+            document.getElementById('collection-progress').innerText = `📖 圖鑑收集進度: ${unlockedMeds.length} / ${totalUnique} 種`;
+        }
+
+        const originalOnload = window.onload;
+        window.onload = () => {
+            if (originalOnload) originalOnload();
+            updateProgress();
+        };
+
+        function rollRarity() {
+            const rand = Math.random() * 100;
+            if (rand < 1) return 'UR';     
+            if (rand < 5) return 'SSR';    
+            if (rand < 15) return 'SR';    
+            if (rand < 50) return 'R';     
+            return 'N';                    
+        }
+
+        function rollGuaranteedRarity() {
+            const rand = Math.random() * 100;
+            if (rand < 2) return 'UR';     
+            if (rand < 12) return 'SSR';   
+            return 'SR';                   
+        }
+
+        function getMedByRarity(rarity) {
+            const pool = medData.filter(m => m.rarity === rarity);
+            if (pool.length === 0) {
+                if(rarity === 'UR') return getMedByRarity('SSR');
+                if(rarity === 'SSR') return getMedByRarity('SR');
+                if(rarity === 'SR') return getMedByRarity('R');
+                return medData[Math.floor(Math.random() * medData.length)];
+            }
+            return pool[Math.floor(Math.random() * pool.length)];
+        }
+
+        function startGacha1() {
+            if (typeof medData === 'undefined' || medData.length === 0) { alert("資料庫尚未載入！"); return; }
+            executeGachaAnimation(1);
+        }
+
+        function startGacha10() {
+            if (typeof medData === 'undefined' || medData.length === 0) { alert("資料庫尚未載入！"); return; }
+            executeGachaAnimation(10);
+        }
+
+        function executeGachaAnimation(times) {
+            const overlay = document.getElementById('gacha-overlay');
+            const resultsGrid = document.getElementById('gacha-results');
+            const closeBtn = document.querySelector('.gacha-close-btn');
+
+            resultsGrid.innerHTML = '';
+            closeBtn.classList.remove('show');
+            overlay.classList.add('active');
+
+            const pulls = [];
+            for (let i = 0; i < times; i++) {
+                let rarity = (times === 10 && i === 9) ? rollGuaranteedRarity() : rollRarity();
+                let pulledMed = getMedByRarity(rarity);
+                pulls.push(pulledMed);
+                saveUnlock(pulledMed.name);
+            }
+
+            updateProgress(); 
+
+            pulls.forEach((med, index) => {
+                setTimeout(() => {
+                    const div = document.createElement('div');
+                    div.innerHTML = generateCardHTML(med, true); 
+                    const cardEl = div.firstElementChild;
+                    
+                    cardEl.classList.add('gacha-card-anim');
+                    if (med.rarity === 'SSR') cardEl.style.boxShadow = '0 0 20px rgba(255, 215, 0, 0.8)';
+                    if (med.rarity === 'UR') cardEl.style.boxShadow = '0 0 30px rgba(255, 0, 0, 0.8)';
+
+                    resultsGrid.appendChild(cardEl);
+
+                    if (index === times - 1) {
+                        setTimeout(() => closeBtn.classList.add('show'), 600);
+                    }
+                }, index * 300); 
+            });
+        }
+
+        function closeGacha() {
+            document.getElementById('gacha-overlay').classList.remove('active');
+            renderAllSections(); 
+        }
+
+        // ================== 刪檔重刷功能 ==================
+        function resetGachaSave() {
+            const confirmReset = confirm("⚠️ 警告：確定要刪除所有存檔並重新開始嗎？\n\n你的圖鑑將會全部清空，此動作無法復原！");
+            if (confirmReset) {
+                localStorage.removeItem('medgirl_unlocked');
+                unlockedMeds = [];
+                updateProgress();
+                renderAllSections();
+                alert("✨ 存檔已清空！祝你這次首抽能中 UR 天山雪蓮！");
+            }
+        }
+
+        // ================== 管理員上帝模式 ==================
+        let isAdminMode = false;
+        // 戰鬥模擬器 (battle.html) 靠呢個 sessionStorage 標記判斷係咪管理員模式
+        const ADMIN_KEY = 'octoMedAdmin';
+        function setAdminFlag(on) {
+            try { on ? sessionStorage.setItem(ADMIN_KEY, '1') : sessionStorage.removeItem(ADMIN_KEY); } catch (e) {}
+            document.getElementById('battleBtn').style.display = on ? '' : 'none';
+        }
+        setAdminFlag(false); // 每次開主頁都由非管理員開始
+
+        function openBattleSim() {
+            if (!isAdminMode) return;
+            setAdminFlag(true);
+            location.href = 'battle.html?roster=girl';
+        }
+
+        function toggleAdminMode() {
+            const adminBtn = document.getElementById('adminToggleBtn');
+            if (!isAdminMode) {
+                const pwd = prompt("請輸入管理員密碼以解鎖全圖鑑：");
+                if (pwd === "640480") {
+                    isAdminMode = true;
+                    setAdminFlag(true);
+                    adminBtn.innerText = "🔓 退出管理員";
+                    adminBtn.classList.add('active-admin');
+                    alert("✅ 密碼正確！管理員模式已啟動，所有圖鑑暫時解鎖。");
+                    renderAllSections(); 
+                } else if (pwd !== null) {
+                    alert("❌ 密碼錯誤！");
+                }
+            } else {
+                isAdminMode = false;
+                setAdminFlag(false);
+                adminBtn.innerText = "🔐 管理員功能";
+                adminBtn.classList.remove('active-admin');
+                alert("🔒 已退出管理員模式，恢復原圖鑑收集進度。");
+                renderAllSections(); 
+            }
+        }
+
+        // ================== 強制更新 App 邏輯 ==================
+        function forceUpdateApp() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    for(let registration of registrations) {
+                        registration.unregister(); 
+                    }
+                    caches.keys().then(keys => {
+                        Promise.all(keys.map(key => caches.delete(key)))
+                        .then(() => {
+                            alert("✨ 已清除舊版快取，將為您重新載入最新版本！\n(您的圖鑑收集進度已保留)");
+                            window.location.reload(true); 
+                        });
+                    });
+                });
+            } else {
+                window.location.reload(true);
+            }
+        }
+    </script>
+
+    <!-- Octo 吉祥物 -->
+    <script src="octo.js" defer data-label="八爪手札"></script>
+</body>
+</html>
