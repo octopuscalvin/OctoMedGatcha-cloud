@@ -384,7 +384,7 @@ class Battle{
     tm.atkBuff=tm.sameNature?R.buffAtk:0;
     tm.manual=this.manual&&tm.side==='ours';
     tm.timer=R.firstAt0?tm.interval:0;tm.round=0;tm.ready=false;
-    tm.members.forEach(x=>Object.assign(x,{dmg:0,heal:0,tox:0,atkN:0,healN:0,choice:x.g.stance||'atk'}));
+    tm.members.forEach(x=>Object.assign(x,{dmg:0,heal:0,tox:0,atkN:0,healN:0,choice:tm.side==='ally'?'atk':(x.g.stance||'atk')}));
     return tm;
   }
   ePct(){return this.eHp/this.eMax*100}
@@ -409,6 +409,8 @@ class Battle{
   }
   fire(tm){if(!tm.ready||this.over)return;tm.ready=false;tm.timer=0;this.round(tm)}
   autoChoose(tm){
+    // 友方(D/E/F)規則：只攻擊，唔會回復，唔受自動回血門檻影響
+    if(tm.side==='ally'){tm.members.forEach(x=>x.choice='atk');return}
     tm.members.forEach(x=>x.choice=x.g.stance||'atk');
     const lim=this.R.autoHealBelow;
     if(lim>0&&this.pHp<lim&&!tm.members.some(x=>x.choice==='heal')){
@@ -714,16 +716,24 @@ const BOSS_PRESETS=[
 ];
 function applyBoss(p){
   S.mode='boss';const m=S.modes.boss;
-  Object.assign(m,{decay:[80,50,20,0].map((a,i)=>({above:a,pct:p.decay[i],per:1})),regen:p.regen,six:true,ally:0,starScale:2});
+  // 淨係「尾二」嘅最終大佬（別西卜・癌變）用我方6人自選；其餘大佬跟返一般戰鬥：A/B/C我方、D/E/F友方（友方只攻擊，唔會回復）
+  const six=p.name==='別西卜・癌變';
+  Object.assign(m,{decay:[80,50,20,0].map((a,i)=>({above:a,pct:p.decay[i],per:1})),regen:p.regen,six,ally:six?0:3,starScale:2});
   S.enemies.boss={name:p.name,maxHp:p.hp,weak:[...p.weak],patho:p.patho,likes:[...p.likes]};
-  S.ours=p.team.map(([n,st,stars])=>{const g=findHerb(n);return g?Object.assign(clone(g),{stance:st,stars}):EMPTY()}).map(g=>{delete g.custom;return g});
+  const build=([n,st,stars])=>{const g=findHerb(n);return g?Object.assign(clone(g),{stance:st,stars}):EMPTY()};
+  if(six){
+    S.ours=p.team.map(build).map(g=>{delete g.custom;return g});
+  }else{
+    S.ours=p.team.slice(0,3).map(build).map(g=>{delete g.custom;return g});
+    S.ally=p.team.slice(3,6).map(t=>build([t[0],'atk',t[2]])).map(g=>{delete g.custom;return g});
+  }
   save();initHeader();renderTabs();resetBattle();renderEditor();
 }
 function edEnemy(){
   const en=E();
   setTimeout(updateHpHelp);
   return[h('div',{class:'note'},`目前模式：${M().label}（每個模式有自己嘅病魔）`),
-    field('📜 大佬劇本',h('select',{onchange:e=>{const p=BOSS_PRESETS[+e.target.value];if(p&&confirm(`載入「${p.name}」？會轉去大佬模式，覆蓋大佬模式嘅病魔、扣血表、回血同我方 6 人。`))applyBoss(p);else e.target.value=''}},
+    field('📜 大佬劇本',h('select',{onchange:e=>{const p=BOSS_PRESETS[+e.target.value];if(!p){e.target.value='';return}const teamTxt=p.name==='別西卜・癌變'?'我方 6 人自選':'我方 3 人（A/B/C）＋友方 3 人（D/E/F，只攻擊、唔會回復）';if(confirm(`載入「${p.name}」？會轉去大佬模式，覆蓋大佬模式嘅病魔、扣血表、回血同${teamTxt}。`))applyBoss(p);else e.target.value=''}},
       h('option',{value:''},'揀一個大佬（20 回合設計）…'),BOSS_PRESETS.map((p,i)=>h('option',{value:i},`${p.area}｜${p.name}｜${p.stars}★`)))),
     field('名稱',h('input',{value:en.name,onchange:e=>{en.name=e.target.value;changed()}})),
     field('病魔生命',num(()=>en.maxHp,v=>en.maxHp=v,100,100)),
